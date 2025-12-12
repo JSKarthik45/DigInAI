@@ -26,7 +26,7 @@ const styleFactory = (colors) =>
       padding: 14,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.border,
-      backgroundColor: colors.background,
+      backgroundColor: colors.primary,
       marginBottom: 10,
     },
     cardTitle: {

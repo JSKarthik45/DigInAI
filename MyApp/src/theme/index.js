@@ -18,9 +18,9 @@ export const radius = {
 };
 
 export const typography = {
-  title: { fontSize: 28, fontWeight: '700' },
-  subtitle: { fontSize: 16, color: colors.muted },
-  body: { fontSize: 14, color: colors.text },
+  title: { fontSize: 20, fontWeight: '700', color: colors.text, textAlign: 'center' },
+  subtitle: { fontSize: 16, color: colors.text, textAlign: 'center' },
+  body: { fontSize: 14, color: colors.text, textAlign: 'left' },
 };
 
 export const theme = {

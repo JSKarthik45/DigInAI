@@ -1,15 +1,18 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, Pressable, Animated, Easing } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { TextRecognition } from '@react-native-ml-kit/text-recognition';
 import { useThemeColors, useThemedStyles } from '../../theme/ThemeContext';
+import { typography } from '../../theme';
 import CircleButton from '../../components/CircleButton';
 
 const styleFactory = (colors) => StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 16, paddingVertical: 16, backgroundColor: colors.background },
-  title: { fontSize: 22, fontWeight: '700', color: colors.text, marginBottom: 8, textAlign: 'center' },
-  subtitle: { fontSize: 14, color: colors.muted, textAlign: 'center', marginBottom: 12 },
+  title: { ...typography.title, marginBottom: 8 },
+  subtitle: { ...typography.subtitle, marginBottom: 12 },
+  body: { ...typography.body, marginBottom: 8 },
   tabBar: {
     flexDirection: 'row',
     alignSelf: 'center',
@@ -29,10 +32,10 @@ const styleFactory = (colors) => StyleSheet.create({
     backgroundColor: colors.background,
   },
   tabActive: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.primary,
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.muted,
     fontWeight: '500',
   },
@@ -42,7 +45,7 @@ const styleFactory = (colors) => StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: 10,
+    bottom: 20,
     alignSelf: 'center',
   },
   scannerOverlay: {
@@ -73,8 +76,34 @@ const styleFactory = (colors) => StyleSheet.create({
   scannerButtonText: { color: colors.secondary, fontWeight: '600' },
   centerContent: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: 'stretch',
     justifyContent: 'flex-start',
+  },
+  card: {
+    width: '100%',
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  bodyBulletRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 6,
+  },
+  bodyBulletDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.primary,
+    marginTop: 8,
+    marginRight: 8,
+  },
+  bodyBulletText: {
+    ...typography.body,
+    color: colors.text,
+    flex: 1,
   },
 });
 
@@ -94,6 +123,7 @@ export default function HomeScreen() {
   const [ingredientsText, setIngredientsText] = useState(null);
   const [ingredientsProcessing, setIngredientsProcessing] = useState(false);
   const scanningRef = useRef(true);
+  const pulseAnim = useRef(new Animated.Value(0)).current;
 
   const HISTORY_KEY = 'scan_history_v1';
 
@@ -107,6 +137,25 @@ export default function HomeScreen() {
       console.log('Error updating history', err);
     }
   };
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 900,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0,
+          duration: 900,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [pulseAnim]);
 
   const openScanner = async () => {
     const granted = permission?.granted ?? false;
@@ -169,11 +218,31 @@ export default function HomeScreen() {
     }
   };
 
-  // Placeholder for Google ML Kit OCR integration.
   const recognizeIngredientsFromImage = async (uri) => {
-    // TODO: Integrate Google ML Kit Text Recognition via native module.
-    // For now, return a placeholder string so the flow works.
-    return 'Detected ingredients text from photo (connect Google ML Kit here).';
+    try {
+      const result = await TextRecognition.recognize(uri);
+
+      if (!result) {
+        return '';
+      }
+
+      // Many ML Kit wrappers return blocks/lines; flatten into a single string.
+      if (Array.isArray(result.blocks)) {
+        const lines = result.blocks.flatMap((block) => block.lines || []);
+        const text = lines.map((line) => line.text || '').join('\n');
+        return text.trim();
+      }
+
+      // Fallback if the wrapper exposes a top-level text field.
+      if (typeof result.text === 'string') {
+        return result.text.trim();
+      }
+
+      return '';
+    } catch (err) {
+      console.log('ML Kit text recognition error', err);
+      return '';
+    }
   };
 
   const captureIngredientsPhoto = async () => {
@@ -222,17 +291,22 @@ export default function HomeScreen() {
         {mode === 'barcode' ? (
           <>
             <Text style={styles.subtitle}>
-              Scan a product barcode to fetch its details from Open Food Facts. This works best for packaged foods with clear barcodes.
+              Scan a product barcode. This works best for packaged foods with clear barcodes.
             </Text>
-            <Text style={styles.subtitle}>
-              • Hold the barcode 10–20 cm from the camera.
-            </Text>
-            <Text style={styles.subtitle}>
-              • Make sure the whole barcode is inside the frame and in focus.
-            </Text>
-            <Text style={styles.subtitle}>
-              • Well look up the product in Open Food Facts and show the full analysis on the Analyse tab.
-            </Text>
+            <View style={[styles.card, { marginTop: 8 }]}>            
+              <View style={styles.bodyBulletRow}>
+                <View style={styles.bodyBulletDot} />
+                <Text style={styles.bodyBulletText}>Hold the barcode 10–20 cm from the camera so the lines are sharp.</Text>
+              </View>
+              <View style={styles.bodyBulletRow}>
+                <View style={styles.bodyBulletDot} />
+                <Text style={styles.bodyBulletText}>Center the entire barcode inside the frame and avoid glare or reflections.</Text>
+              </View>
+              <View style={styles.bodyBulletRow}>
+                <View style={styles.bodyBulletDot} />
+                <Text style={styles.bodyBulletText}>We’ll look it up in Open Food Facts and show the full breakdown on the Analyse tab.</Text>
+              </View>
+            </View>
             {productLoading && (
               <Text style={styles.subtitle}>Looking up this product…</Text>
             )}
@@ -245,15 +319,20 @@ export default function HomeScreen() {
             <Text style={styles.subtitle}>
               Take a clear photo of the ingredients list so we can read it directly from the label.
             </Text>
-            <Text style={styles.subtitle}>
-              • Lay the package flat and avoid glare or reflections.
-            </Text>
-            <Text style={styles.subtitle}>
-              • Make sure the entire ingredients paragraph is visible in the frame.
-            </Text>
-            <Text style={styles.subtitle}>
-              • Well run on-device text recognition and show the results on the Analyse tab.
-            </Text>
+            <View style={[styles.card, { marginTop: 8 }]}>            
+              <View style={styles.bodyBulletRow}>
+                <View style={styles.bodyBulletDot} />
+                <Text style={styles.bodyBulletText}>Lay the package flat and tilt it until reflections disappear.</Text>
+              </View>
+              <View style={styles.bodyBulletRow}>
+                <View style={styles.bodyBulletDot} />
+                <Text style={styles.bodyBulletText}>Fill the frame with the full ingredients paragraph, edge to edge.</Text>
+              </View>
+              <View style={styles.bodyBulletRow}>
+                <View style={styles.bodyBulletDot} />
+                <Text style={styles.bodyBulletText}>We’ll run on-device text recognition and show the results on the Analyse tab.</Text>
+              </View>
+            </View>
             {ingredientsProcessing && (
               <Text style={styles.subtitle}>Analyzing ingredients photo…</Text>
             )}
@@ -261,13 +340,39 @@ export default function HomeScreen() {
         )}
       </View>
 
-      <CircleButton
-        icon="add"
-        size={58}
-        backgroundColor={colors.primary}
-        onPress={mode === 'barcode' ? openScanner : openIngredientsScanner}
-        style={styles.fab}
-      />
+      <Animated.View
+        style={[
+          styles.fab,
+          {
+            transform: [
+              {
+                scale: pulseAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [1, 1.05],
+                }),
+              },
+              {
+                rotate: pulseAnim.interpolate({
+                  inputRange: [0, 0.25, 0.5, 0.75, 1],
+                  outputRange: ['-3deg', '0deg', '3deg', '0deg', '-3deg'],
+                }),
+              },
+            ],
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.25,
+            shadowRadius: 12,
+            elevation: 8,
+          },
+        ]}
+      >
+        <CircleButton
+          icon="add"
+          size={62}
+          backgroundColor={colors.primary}
+          onPress={mode === 'barcode' ? openScanner : openIngredientsScanner}
+        />
+      </Animated.View>
 
       {scannerVisible && (
         <View style={styles.scannerOverlay}>

@@ -42,9 +42,9 @@ export default function AppNavigator() {
           headerTitle: () => (
             <Text
               style={{
-                fontSize: 18,
+                fontSize: 20,
                 fontWeight: '600',
-                color: colors.text,
+                color: colors.primary,
               }}
             >
               Scanner
@@ -60,9 +60,9 @@ export default function AppNavigator() {
           headerTitle: () => (
             <Text
               style={{
-                fontSize: 18,
+                fontSize: 20,
                 fontWeight: '600',
-                color: colors.text,
+                color: colors.primary,
               }}
             >
               Analyse
@@ -78,9 +78,9 @@ export default function AppNavigator() {
           headerTitle: () => (
             <Text
               style={{
-                fontSize: 18,
+                fontSize: 20,
                 fontWeight: '600',
-                color: colors.text,
+                color: colors.primary,
               }}
             >
               History

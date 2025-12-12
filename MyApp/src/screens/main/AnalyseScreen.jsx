@@ -92,7 +92,7 @@ export default function AnalyseScreen() {
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.subtitle}>
-        Review what was detected from your last scan.
+        Review latest scan.
       </Text>
 
       {loading && (
