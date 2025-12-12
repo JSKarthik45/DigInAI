@@ -1,21 +1,21 @@
 import React, { useRef, useState, useContext, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Dimensions, ScrollView, Animated } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Dimensions, ScrollView, Animated, TouchableOpacity } from 'react-native';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CircleButton from '../../components/CircleButton';
 import { OnboardingContext } from '../../navigation/OnboardingContext';
 import { useThemeColors, useThemedStyles } from '../../theme/ThemeContext';
-import SettingsQuickSetup from '../../components/SettingsQuickSetup';
-import { loadPreferences, savePreferences } from '../../storage/preferences';
 
 const { width } = Dimensions.get('window');
 
 const PAGES = [
   { key: 'problem' },
   { key: 'solution' },
-  { key: 'setup' },
+  { key: 'demo' },
   { key: 'motivation' },
+  { key: 'pricing' },
 ];
 
 const styleFactory = (colors) => StyleSheet.create({
@@ -48,6 +48,22 @@ const styleFactory = (colors) => StyleSheet.create({
     right: 24,
     bottom: 24,
   },
+  ctaWrap: {
+    position: 'absolute',
+    left: 24,
+    right: 24,
+  },
+  ctaButton: {
+    height: 52,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+  },
 });
 
 export default function OnboardingPager() {
@@ -60,19 +76,15 @@ export default function OnboardingPager() {
   const [blocked, setBlocked] = useState({});
   const [problemTarget, setProblemTarget] = useState(5);
 
-  useEffect(() => {
-    (async () => {
-      const pref = await loadPreferences();
-      setBlocked(pref.blocked || {});
-      setProblemTarget(pref.problemTarget ?? 5);
-    })();
-  }, []);
+  const demoPlayer = useVideoPlayer(
+    'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    (player) => {
+      player.loop = true;
+    }
+  );
 
   const goNext = async () => {
     const next = index + 1;
-    if (PAGES[index]?.key === 'setup') {
-      await savePreferences({ problemTarget });
-    }
     if (next < PAGES.length) {
       setIndex(next);
       listRef.current?.scrollToIndex({ index: next, animated: true });
@@ -98,6 +110,17 @@ export default function OnboardingPager() {
       ])
     ).start();
   }, []);
+
+  // Play demo video only when its page is visible; pause otherwise
+  useEffect(() => {
+    if (!demoPlayer) return;
+    const key = PAGES[index]?.key;
+    if (key === 'demo') {
+      demoPlayer.playAsync?.() ?? demoPlayer.play?.();
+    } else {
+      demoPlayer.pauseAsync?.() ?? demoPlayer.pause?.();
+    }
+  }, [index, demoPlayer]);
   const floatUpDownA = floatA.interpolate({ inputRange: [0,1], outputRange: [6, -6] });
   const floatUpDownB = floatB.interpolate({ inputRange: [0,1], outputRange: [-5, 5] });
 
@@ -118,33 +141,33 @@ export default function OnboardingPager() {
           if (item.key === 'problem') {
             return (
               <View style={[styles.page, { width, backgroundColor: colors.background }]}> 
-                  <Text style={[styles.title, { color: colors.secondary }]}>Distracted by endless scrolling?</Text>
-                  <Text style={[styles.subtitle, { color: colors.muted }]}>Scrolling eats your time when you meant to focus or rest.</Text>
+                  <Text style={[styles.title, { color: colors.secondary }]}>Trusting labels blindly?</Text>
+                  <Text style={[styles.subtitle, { color: colors.muted }]}>It’s impossible to memorize every preservative. Hidden nasties often slip into your cart unnoticed.</Text>
                   <View style={{ position: 'absolute', top: 80, left: 0, right: 0, bottom: 0 }} pointerEvents="none">
-                    {/* Scatter social icons around screen (hardcoded positions) */}
+                    {/* Scatter chemical / additive icons around screen (hardcoded positions) */}
                     <Animated.View style={{ position: 'absolute', left: 16, top: 40, transform: [{ translateY: floatUpDownA }] }}>
-                      <FontAwesome5 name="facebook" size={36} color="#1877F2" />
+                      <FontAwesome5 name="flask" size={36} color="#f97316" />
                     </Animated.View>
                     <Animated.View style={{ position: 'absolute', right: 24, top: 120, transform: [{ translateY: floatUpDownB }] }}>
-                      <FontAwesome5 name="twitter" size={36} color="#1DA1F2" />
+                      <FontAwesome5 name="vial" size={36} color="#22c55e" />
                     </Animated.View>
                     <Animated.View style={{ position: 'absolute', left: width/2 - 18, top: 20, transform: [{ translateY: floatUpDownB }] }}>
-                      <FontAwesome5 name="instagram" size={36} color="#E1306C" />
+                      <FontAwesome5 name="radiation-alt" size={36} color="#eab308" />
                     </Animated.View>
                     <Animated.View style={{ position: 'absolute', left: width/4, top: 200, transform: [{ translateY: floatUpDownA }] }}>
-                      <FontAwesome5 name="youtube" size={36} color="#FF0000" />
+                      <FontAwesome5 name="skull-crossbones" size={36} color="#ef4444" />
                     </Animated.View>
                     <Animated.View style={{ position: 'absolute', left:102, bottom: 200, transform: [{ translateY: floatUpDownB }] }}>
-                      <FontAwesome5 name="snapchat" size={36} color="#FFFC00" />
+                      <FontAwesome5 name="biohazard" size={36} color="#a855f7" />
                     </Animated.View>
                     <Animated.View style={{ position: 'absolute', right: 36, bottom: 220, transform: [{ translateY: floatUpDownA }] }}>
-                      <FontAwesome5 name="tiktok" size={36} color="#ffffffff" />
+                      <FontAwesome5 name="prescription-bottle-alt" size={36} color="#0ea5e9" />
                     </Animated.View>
                     <Animated.View style={{ position: 'absolute', left: width - 100, top: 260, transform: [{ translateY: floatUpDownB }] }}>
-                      <FontAwesome5 name="reddit" size={36} color="#FF4500" />
+                      <FontAwesome5 name="capsules" size={36} color="#f97316" />
                     </Animated.View>
                     <Animated.View style={{ position: 'absolute', left: 60, top: 300, transform: [{ translateY: floatUpDownA }] }}>
-                      <FontAwesome5 name="whatsapp" size={36} color="#25D366" />
+                      <FontAwesome5 name="atom" size={36} color="#38bdf8" />
                     </Animated.View>
                   </View>
               </View>
@@ -153,68 +176,84 @@ export default function OnboardingPager() {
           if (item.key === 'solution') {
             return (
               <View style={[styles.page, { width, backgroundColor: colors.background }]}> 
-                  <Text style={[styles.title, { color: colors.secondary }]}>Turn no‑scroll hours into progress</Text>
-                  <Text style={[styles.subtitle, { color: colors.muted }]}>Pick the times you want less scrolling. We’ll nudge you then to open this app and solve chess puzzles instead.</Text>
-                  {/* Single row of chess pieces below text */}
+                <Text style={[styles.title, { color: colors.secondary }]}>Turn scans into safety checks</Text>
+                <Text style={[styles.subtitle, { color: colors.muted }]}>Scan the back, not the front. Get instant insights on synthetic colours and risky additives you should leave on the shelf.</Text>
+                <View style={{ marginTop: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18 }}>
+                  <Animated.View style={{ transform: [{ translateY: floatUpDownA }] }}>
+                    <Ionicons name="shield" size={36} color={colors.primary} />
+                  </Animated.View>
+                  <Animated.View style={{ transform: [{ translateY: floatUpDownB }] }}>
+                    <Ionicons name="barcode" size={36} color={colors.secondary} />
+                  </Animated.View>
+                  <Animated.View style={{ transform: [{ translateY: floatUpDownA }] }}>
+                    <Ionicons name="analytics" size={34} color={colors.text} />
+                  </Animated.View>
+                  <Animated.View style={{ transform: [{ translateY: floatUpDownB }] }}>
+                    <Ionicons name="search" size={34} color={colors.muted} />
+                  </Animated.View>
+                </View>
+              </View>
+            );
+          }
+          if (item.key === 'demo') {
+            return (
+              <View style={[styles.page, { width, backgroundColor: colors.background }]}> 
+                <View style={{ marginTop: 0, width: '100%', borderRadius: 16, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.surface }}>
+                  <VideoView
+                    style={{ width: '100%', height: 450 }}
+                    player={demoPlayer}
+                    fullscreenOptions={{}}
+                    contentFit="cover"
+                  />
+                </View>
+              </View>
+            );
+          }
+          if (item.key === 'motivation') {
+            return (
+              <View style={[styles.page, { width, backgroundColor: colors.background }]}> 
+                <Text style={[styles.title, { color: colors.secondary }]}>Master your grocery list</Text>
+                <Text style={[styles.subtitle, { color: colors.muted }]}>Small choices away from processed chemicals, toward cleaner ingredients, lead to stronger health and better habits.</Text>
+                  {/* Single row of progress/habits/brain icons */}
                   <View style={{ marginTop: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18 }}>
                     <Animated.View style={{ transform: [{ translateY: floatUpDownA }] }}>
-                      <FontAwesome5 name="chess-king" size={36} color={colors.primary} />
+                      <Ionicons name="leaf" size={36} color={colors.primary} />
                     </Animated.View>
                     <Animated.View style={{ transform: [{ translateY: floatUpDownB }] }}>
-                      <FontAwesome5 name="chess-queen" size={36} color={colors.secondary} />
+                      <Ionicons name="nutrition" size={36} color={colors.secondary} />
                     </Animated.View>
                     <Animated.View style={{ transform: [{ translateY: floatUpDownA }] }}>
-                      <FontAwesome5 name="chess-bishop" size={34} color={colors.text} />
+                      <Ionicons name="heart" size={36} color={colors.text} />
                     </Animated.View>
                     <Animated.View style={{ transform: [{ translateY: floatUpDownB }] }}>
-                      <FontAwesome5 name="chess-knight" size={34} color={colors.muted} />
-                    </Animated.View>
-                    <Animated.View style={{ transform: [{ translateY: floatUpDownA }] }}>
-                      <FontAwesome5 name="chess-rook" size={34} color={colors.primary} />
-                    </Animated.View>
-                    <Animated.View style={{ transform: [{ translateY: floatUpDownB }] }}>
-                      <FontAwesome5 name="chess-pawn" size={34} color={colors.secondary} />
+                      <Ionicons name="happy" size={34} color={colors.muted} />
                     </Animated.View>
                   </View>
               </View>
             );
           }
-          if (item.key === 'setup') {
+          if (item.key === 'pricing') {
             return (
-              <ScrollView style={{ width }} contentContainerStyle={[styles.page, { alignItems: 'stretch', backgroundColor: colors.background }]}> 
-                  <Text style={[styles.title, { color: colors.secondary }]}>Quick setup</Text>
-                  {/* <Text style={[styles.subtitle, { color: colors.muted }]}>Choose which apps to block and how many puzzles to solve.</Text> */}
-                <SettingsQuickSetup
-                  blocked={blocked}
-                  setBlocked={setBlocked}
-                  problemTarget={problemTarget}
-                  setProblemTarget={setProblemTarget}
-                />
-              </ScrollView>
+              <View style={[styles.page, { width, backgroundColor: colors.background }]}> 
+                <Text style={[styles.title, { color: colors.secondary }]}>Pricing</Text>
+                <Text style={[styles.subtitle, { color: colors.muted }]}>Choose the plan that fits your grocery routine  both include a 30 day free trial.</Text>
+                <View style={{ marginTop: 24, width: '100%', flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <View style={{ flex: 1, marginRight: 8, borderRadius: 16, padding: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.surface }}>
+                    <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Monthly</Text>
+                    <Text style={{ marginTop: 6, fontSize: 20, fontWeight: '800', color: colors.text }}>$4.99</Text>
+                    <Text style={{ marginTop: 4, color: colors.muted }}>Flexible month-to-month billing.</Text>
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 8, borderRadius: 16, padding: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.primary, backgroundColor: colors.background }}>
+                    <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Yearly</Text>
+                    <Text style={{ marginTop: 6, fontSize: 20, fontWeight: '800', color: colors.text }}>$39.99</Text>
+                    <Text style={{ marginTop: 4, color: colors.muted }}>Best value across the year.</Text>
+                  </View>
+                </View>
+                <Text style={{ marginTop: 16, color: colors.muted, textAlign: 'center' }}>30 day free trial on all plans  enjoy full access before you pay.</Text>
+              </View>
             );
           }
-          // motivation
-          return (
-            <View style={[styles.page, { width, backgroundColor: colors.background }]}> 
-                <Text style={[styles.title, { color: colors.secondary }]}>Rewire your brain, one choice at a time</Text>
-                <Text style={[styles.subtitle, { color: colors.muted }]}>Small choices away from scrolling, toward puzzles, add up to stronger focus and better habits.</Text>
-                {/* Single row of progress/habits/brain icons */}
-                <View style={{ marginTop: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18 }}>
-                  <Animated.View style={{ transform: [{ translateY: floatUpDownA }] }}>
-                    <Ionicons name="fitness" size={36} color={colors.primary} />
-                  </Animated.View>
-                  <Animated.View style={{ transform: [{ translateY: floatUpDownB }] }}>
-                    <Ionicons name="trending-up" size={36} color={colors.secondary} />
-                  </Animated.View>
-                  <Animated.View style={{ transform: [{ translateY: floatUpDownA }] }}>
-                    <Ionicons name="time" size={36} color={colors.text} />
-                  </Animated.View>
-                  <Animated.View style={{ transform: [{ translateY: floatUpDownB }] }}>
-                    <Ionicons name="calendar" size={34} color={colors.muted} />
-                  </Animated.View>
-                </View>
-            </View>
-          );
+          return null;
         }}
       />
 
@@ -224,12 +263,24 @@ export default function OnboardingPager() {
         ))}
       </View>
 
-      <CircleButton
-        onPress={goNext}
-        icon={index === PAGES.length - 1 ? 'checkmark' : 'arrow-forward'}
-        backgroundColor={colors.primary}
-        style={[styles.fab, { bottom: insets.bottom + 24 }]}
-      />
+      {index === PAGES.length - 1 ? (
+        <View style={[styles.ctaWrap, { bottom: insets.bottom + 24 }] }>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={[styles.ctaButton, { backgroundColor: colors.primary }]}
+            onPress={goNext}
+          >
+            <Text style={styles.ctaText}>Start 30 day free trial</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <CircleButton
+          onPress={goNext}
+          icon="arrow-forward"
+          backgroundColor={colors.primary}
+          style={[styles.fab, { bottom: insets.bottom + 24 }]}
+        />
+      )}
     </SafeAreaView>
   );
 }

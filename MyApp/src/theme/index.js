@@ -1,5 +1,5 @@
-import { DefaultTheme, DarkTheme } from '@react-navigation/native';
-import { lightColors, darkColors } from './colors';
+import { DefaultTheme } from '@react-navigation/native';
+import { colors } from './colors';
 
 export const spacing = {
   xs: 4,
@@ -19,50 +19,27 @@ export const radius = {
 
 export const typography = {
   title: { fontSize: 28, fontWeight: '700' },
-  subtitle: { fontSize: 16, color: lightColors.muted },
-  body: { fontSize: 14, color: lightColors.text },
+  subtitle: { fontSize: 16, color: colors.muted },
+  body: { fontSize: 14, color: colors.text },
 };
 
-export const lightTheme = {
-  colors: lightColors,
+export const theme = {
+  colors: colors,
   spacing,
   radius,
   typography,
 };
 
-export const darkTheme = {
-  colors: darkColors,
-  spacing,
-  radius,
-  typography: {
-    ...typography,
-    subtitle: { fontSize: 16, color: darkColors.muted },
-    body: { fontSize: 14, color: darkColors.text },
-  },
-};
-
-export const lightNavigationTheme = {
+export const navigationTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    background: lightColors.background,
-    card: lightColors.surface,
-    text: lightColors.text,
-    border: lightColors.border,
-    primary: lightColors.primary,
+    background: colors.background,
+    card: colors.surface,
+    text: colors.text,
+    border: colors.border,
+    primary: colors.primary,
   },
 };
 
-export const darkNavigationTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    background: darkColors.background,
-    card: darkColors.surface,
-    text: darkColors.text,
-    border: darkColors.border,
-    primary: darkColors.primary,
-  },
-};
-
-export { lightColors, darkColors };
+export { colors };

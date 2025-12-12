@@ -1,16 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppNavigator from './src/navigation/AppNavigator';
 import OnboardingNavigator from './src/navigation/OnboardingNavigator';
 import { OnboardingContext } from './src/navigation/OnboardingContext';
 import { NavigationContainer } from '@react-navigation/native';
-import { lightNavigationTheme, darkNavigationTheme } from './src/theme';
-import { loadPreferences } from './src/storage/preferences';
-import { setThemePrimarySecondary } from './src/theme/colors';
-import { ThemeProvider, useThemeColors, useThemeController } from './src/theme/ThemeContext';
-
-import getPuzzlesData from './src/services/getData';
+import { navigationTheme } from './src/theme';
+import { ThemeProvider } from './src/theme/ThemeContext';
 
 // Toggle to force showing onboarding in development
 // Set to true during development to always see onboarding
@@ -25,18 +20,11 @@ export default function App() {
   // but allow switching to app after finishing within the session.
   const [devSessionOnboarding, setDevSessionOnboarding] = useState(SHOW_ONBOARDING_ALWAYS);
 
-  const [initialTheme, setInitialTheme] = useState(null);
-
   useEffect(() => {
     const init = async () => {
       try {
         const value = await AsyncStorage.getItem(ONBOARDING_KEY);
         setHasOnboarded(value === 'true');
-        const prefs = await loadPreferences();
-        if (prefs.theme) {
-          setThemePrimarySecondary(prefs.theme.primary, prefs.theme.secondary);
-          setInitialTheme(prefs.theme);
-        }
       } catch (e) {
         setHasOnboarded(false);
       } finally {
@@ -64,32 +52,12 @@ export default function App() {
     }
   };
 
-  // Build a navigation theme each render after provider mounts so primary/secondary update.
-  const ThemedNav = () => {
-    const colors = useThemeColors();
-    // Clone a dark navigation theme but override primary + card + background colors.
-    const navTheme = {
-      ...darkNavigationTheme,
-      colors: {
-        ...darkNavigationTheme.colors,
-        primary: colors.primary,
-        card: colors.background,
-        background: colors.background,
-        text: colors.text,
-        border: colors.border || darkNavigationTheme.colors.border,
-      },
-    };
-    return (
-      <NavigationContainer theme={navTheme}>
-        {showOnboarding ? <OnboardingNavigator /> : <AppNavigator />}
-      </NavigationContainer>
-    );
-  };
-
   return (
     <OnboardingContext.Provider value={{ completeOnboarding }}>
-      <ThemeProvider initialTheme={initialTheme}>
-        <ThemedNav />
+      <ThemeProvider>
+        <NavigationContainer theme={navigationTheme}>
+          {showOnboarding ? <OnboardingNavigator /> : <AppNavigator />}
+        </NavigationContainer>
       </ThemeProvider>
     </OnboardingContext.Provider>
   );

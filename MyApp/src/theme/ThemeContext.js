@@ -1,43 +1,19 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import { setThemePrimarySecondary, darkColors } from './colors';
+import React, { createContext, useContext, useMemo } from 'react';
+import { colors as baseColors } from './colors';
 
-const ThemeContext = createContext({
-  applyTheme: () => {},
-  themeKey: 'classic',
-  colors: darkColors,
-  version: 0,
-});
+const ThemeContext = createContext({ colors: baseColors });
 
-export function ThemeProvider({ children, initialTheme }) {
-  const [themeKey, setThemeKey] = useState(initialTheme?.key || 'classic');
-  const [version, setVersion] = useState(0); // force consumers to re-render
-  const [colors, setColors] = useState({ ...darkColors });
-
-  const applyTheme = useCallback((theme) => {
-    if (!theme || !theme.primary || !theme.secondary) return;
-    setThemePrimarySecondary(theme.primary, theme.secondary);
-    setThemeKey(theme.key || 'custom');
-    // capture a fresh snapshot so style recalculation hooks see new object reference
-    setColors({ ...darkColors });
-    setVersion(v => v + 1); // bump to trigger context change
-  }, []);
-
-  return (
-    <ThemeContext.Provider value={{ applyTheme, themeKey, version, colors }}>
-      {children}
-    </ThemeContext.Provider>
-  );
-}
-
-export function useThemeController() {
-  return useContext(ThemeContext);
+export function ThemeProvider({ children }) {
+  const value = useMemo(() => ({ colors: baseColors }), []);
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
 export function useThemeColors() {
-  return useContext(ThemeContext).colors;
+  const ctx = useContext(ThemeContext);
+  return ctx.colors;
 }
 
 export function useThemedStyles(factory) {
-  const { colors, version } = useThemeController();
-  return React.useMemo(() => factory(colors), [colors, version, factory]);
+  const palette = useThemeColors();
+  return useMemo(() => factory(palette), [factory, palette]);
 }
