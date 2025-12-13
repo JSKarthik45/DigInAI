@@ -44,7 +44,7 @@ export default function AppNavigator() {
               style={{
                 fontSize: 20,
                 fontWeight: '600',
-                color: colors.primary,
+                color: colors.text,
               }}
             >
               Scanner
@@ -62,7 +62,7 @@ export default function AppNavigator() {
               style={{
                 fontSize: 20,
                 fontWeight: '600',
-                color: colors.primary,
+                color: colors.text,
               }}
             >
               Analyse
@@ -80,7 +80,7 @@ export default function AppNavigator() {
               style={{
                 fontSize: 20,
                 fontWeight: '600',
-                color: colors.primary,
+                color: colors.text,
               }}
             >
               History
