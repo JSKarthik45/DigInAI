@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import AppNavigator from './src/navigation/AppNavigator';
 import OnboardingNavigator from './src/navigation/OnboardingNavigator';
 import { OnboardingContext } from './src/navigation/OnboardingContext';
@@ -53,13 +54,15 @@ export default function App() {
   };
 
   return (
-    <OnboardingContext.Provider value={{ completeOnboarding }}>
-      <ThemeProvider>
-        <NavigationContainer theme={navigationTheme}>
-          {showOnboarding ? <OnboardingNavigator /> : <AppNavigator />}
-        </NavigationContainer>
-      </ThemeProvider>
-    </OnboardingContext.Provider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <OnboardingContext.Provider value={{ completeOnboarding }}>
+        <ThemeProvider>
+          <NavigationContainer theme={navigationTheme}>
+            {showOnboarding ? <OnboardingNavigator /> : <AppNavigator />}
+          </NavigationContainer>
+        </ThemeProvider>
+      </OnboardingContext.Provider>
+    </GestureHandlerRootView>
   );
 }
 

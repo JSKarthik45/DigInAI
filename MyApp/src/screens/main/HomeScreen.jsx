@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, Animated, Easing, Image, PanResponder, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as ImageManipulator from 'expo-image-manipulator';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import TextRecognition from '@react-native-ml-kit/text-recognition';
 import { useThemeColors, useThemedStyles } from '../../theme/ThemeContext';
@@ -57,10 +58,54 @@ const styleFactory = (colors) => StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.9)',
     justifyContent: 'flex-end',
   },
+  scannerFrame: {
+    position: 'absolute',
+    top: '16%',
+    left: 32,
+    right: 32,
+    height: 220,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scannerFrameInner: {
+    width: '100%',
+    height: '100%',
+  },
+  scannerCorner: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    borderColor: colors.secondary,
+    borderRadius: 4,
+  },
+  scannerCornerTopLeft: {
+    top: 0,
+    left: 0,
+    borderTopWidth: 3,
+    borderLeftWidth: 3,
+  },
+  scannerCornerTopRight: {
+    top: 0,
+    right: 0,
+    borderTopWidth: 3,
+    borderRightWidth: 3,
+  },
+  scannerCornerBottomLeft: {
+    bottom: 0,
+    left: 0,
+    borderBottomWidth: 3,
+    borderLeftWidth: 3,
+  },
+  scannerCornerBottomRight: {
+    bottom: 0,
+    right: 0,
+    borderBottomWidth: 3,
+    borderRightWidth: 3,
+  },
   scannerFooter: {
     paddingHorizontal: 16,
     paddingVertical: 20,
-    backgroundColor: 'rgba(15,23,42,0.9)',
+    backgroundColor: colors.surface,
   },
   scannerTitle: { fontSize: 18, fontWeight: '700', marginBottom: 6, color: colors.secondary },
   scannerText: { fontSize: 14, color: colors.muted },
@@ -81,11 +126,22 @@ const styleFactory = (colors) => StyleSheet.create({
   },
   card: {
     width: '100%',
-    borderRadius: 14,
-    padding: 16,
+    borderRadius: 12,
+    padding: 14,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     backgroundColor: colors.background,
+    marginBottom: 10,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  cardSubtitle: {
+    fontSize: 14,
+    color: colors.muted,
+    marginTop: 4,
   },
   bodyBulletRow: {
     flexDirection: 'row',
@@ -135,6 +191,15 @@ const styleFactory = (colors) => StyleSheet.create({
     textAlign: 'center',
     fontSize: 14,
     color: colors.muted,
+  },
+  closeButton: {
+    marginTop: 20,
+    paddingVertical: 10,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   cropButtonsRow: {
     flexDirection: 'row',
@@ -368,9 +433,15 @@ export default function HomeScreen() {
       const apiData = await response.json();
       setProductData(apiData);
 
+      const product = apiData?.product || {};
+      const productName = product.product_name || 'Unknown product';
+      const ingredientsText = product.ingredients_text || '';
+
       await appendHistoryEntry({
         type: 'barcode',
         barcode,
+        productName,
+        ingredientsText,
         createdAt: new Date().toISOString(),
       });
 
@@ -399,7 +470,6 @@ export default function HomeScreen() {
 
       // Many ML Kit wrappers return blocks/lines; flatten into a single string.
       if (Array.isArray(result.blocks)) {
-        console.log(result.blocks);
         const lines = result.blocks.flatMap((block) => block.lines || []);
         const text = lines.map((line) => line.text || '').join('\n');
         return text.trim();
@@ -422,11 +492,6 @@ export default function HomeScreen() {
       setIngredientsProcessing(true);
       const text = await recognizeIngredientsFromImage(uri);
       setIngredientsText(text);
-      await appendHistoryEntry({
-        type: 'ingredients',
-        ingredientsText: text,
-        createdAt: new Date().toISOString(),
-      });
       navigation.navigate('Analyse', {
         source: 'ingredients',
         ingredientsText: text,
@@ -439,15 +504,40 @@ export default function HomeScreen() {
   };
 
   const handleConfirmCrop = async () => {
-    if (!capturedImage) return;
+    if (!capturedImage || !cropRect || !cropImageLayout) return;
 
-    const uriToProcess = capturedImage.uri;
+    try {
+      const scaleX = capturedImage.width / cropImageLayout.width;
+      const scaleY = capturedImage.height / cropImageLayout.height;
 
-    setCapturedImage(null);
-    setCropImageLayout(null);
-    setCropRect(null);
+      const cropData = {
+        originX: Math.max(0, Math.round(cropRect.x * scaleX)),
+        originY: Math.max(0, Math.round(cropRect.y * scaleY)),
+        width: Math.round(cropRect.width * scaleX),
+        height: Math.round(cropRect.height * scaleY),
+      };
 
-    await runIngredientsOcrFlow(uriToProcess);
+      const cropped = await ImageManipulator.manipulateAsync(
+        capturedImage.uri,
+        [{ crop: cropData }],
+        { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG }
+      );
+
+      const uriToProcess = cropped?.uri || capturedImage.uri;
+
+      setCapturedImage(null);
+      setCropImageLayout(null);
+      setCropRect(null);
+
+      await runIngredientsOcrFlow(uriToProcess);
+    } catch (err) {
+      console.log('Error cropping image with ImageManipulator', err);
+      // Fallback: run OCR on original image
+      setCapturedImage(null);
+      setCropImageLayout(null);
+      setCropRect(null);
+      await runIngredientsOcrFlow(capturedImage.uri);
+    }
   };
 
   const handleCancelCrop = () => {
@@ -513,19 +603,17 @@ export default function HomeScreen() {
             <Text style={styles.subtitle}>
               Scan a product barcode. This works best for packaged foods with clear barcodes.
             </Text>
-            <View style={[styles.card, { marginTop: 8 }]}>            
-              <View style={styles.bodyBulletRow}>
-                <View style={styles.bodyBulletDot} />
-                <Text style={styles.bodyBulletText}>Hold the barcode 10–20 cm from the camera so the lines are sharp.</Text>
-              </View>
-              <View style={styles.bodyBulletRow}>
-                <View style={styles.bodyBulletDot} />
-                <Text style={styles.bodyBulletText}>Center the entire barcode inside the frame and avoid glare or reflections.</Text>
-              </View>
-              <View style={styles.bodyBulletRow}>
-                <View style={styles.bodyBulletDot} />
-                <Text style={styles.bodyBulletText}>We’ll look it up in Open Food Facts and show the full breakdown on the Analyse tab.</Text>
-              </View>
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Line Up the Shot</Text>
+              <Text style={styles.cardSubtitle}>Hold your device steady, 10-20 cm away.</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Bright & Clear</Text>
+              <Text style={styles.cardSubtitle}>Avoid glare. Ensure the entire barcode is inside the frame or visible.</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Gen Instant Insights</Text>
+              <Text style={styles.cardSubtitle}>We'll analyse the product details and show the full breakdown on the Analyse tab.</Text>
             </View>
             {productLoading && (
               <Text style={styles.subtitle}>Looking up this product…</Text>
@@ -588,7 +676,7 @@ export default function HomeScreen() {
       >
         <CircleButton
           icon="add"
-          size={62}
+          size={70}
           backgroundColor={colors.primary}
           onPress={mode === 'barcode' ? openScanner : openIngredientsScanner}
         />
@@ -602,6 +690,16 @@ export default function HomeScreen() {
             barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'qr'] }}
             onBarcodeScanned={handleBarCodeScanned}
           />
+          <View pointerEvents="none" style={StyleSheet.absoluteFillObject}>
+            <View style={styles.scannerFrame}>
+              <View style={styles.scannerFrameInner}>
+                <View style={[styles.scannerCorner, styles.scannerCornerTopLeft]} />
+                <View style={[styles.scannerCorner, styles.scannerCornerTopRight]} />
+                <View style={[styles.scannerCorner, styles.scannerCornerBottomLeft]} />
+                <View style={[styles.scannerCorner, styles.scannerCornerBottomRight]} />
+              </View>
+            </View>
+          </View>
           <View style={styles.scannerFooter}>
             <Text style={styles.scannerTitle}>Scan a barcode</Text>
             {scannedData ? (
@@ -612,8 +710,11 @@ export default function HomeScreen() {
             ) : (
               <Text style={styles.scannerText}>Point your camera at a product barcode to see its details.</Text>
             )}
-            <Pressable onPress={() => { setScannerVisible(false); scanningRef.current = true; }} style={styles.scannerButton}>
-              <Text style={styles.scannerButtonText}>Close</Text>
+            <Pressable
+              onPress={() => { setScannerVisible(false); scanningRef.current = true; }}
+              style={[styles.closeButton, styles.cropButtonPrimary]}
+            >
+              <Text style={[styles.cropButtonText]}>Close</Text>
             </Pressable>
           </View>
         </View>
@@ -629,12 +730,20 @@ export default function HomeScreen() {
           <View style={styles.scannerFooter}>
             <Text style={styles.scannerTitle}>Take a photo of the ingredients</Text>
             <Text style={styles.scannerText}>Fill the screen with the ingredients list, then capture.</Text>
-            <Pressable onPress={captureIngredientsPhoto} style={styles.scannerButton}>
-              <Text style={styles.scannerButtonText}>Capture</Text>
-            </Pressable>
-            <Pressable onPress={() => setIngredientsScannerVisible(false)} style={[styles.scannerButton, { marginTop: 8 }]}>
-              <Text style={styles.scannerButtonText}>Cancel</Text>
-            </Pressable>
+            <View style={styles.cropButtonsRow}>
+              <Pressable
+                onPress={() => setIngredientsScannerVisible(false)}
+                style={[styles.cropButton, styles.cropButtonSecondary]}
+              >
+                <Text style={styles.cropButtonText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={captureIngredientsPhoto}
+                style={[styles.cropButton, styles.cropButtonPrimary]}
+              >
+                <Text style={styles.cropButtonText}>Capture</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       )}
