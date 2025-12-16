@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TextInput, Pressable, Switch } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../../theme/ThemeContext';
 import { typography } from '../../theme';
 
@@ -9,33 +10,301 @@ const HISTORY_KEY = 'scan_history_v1';
 
 const styleFactory = (colors) =>
   StyleSheet.create({
-    container: {
+    overlayRoot: {
       flex: 1,
+      backgroundColor: colors.background,
+      paddingTop: 40,
       paddingHorizontal: 16,
-      paddingVertical: 16,
-      backgroundColor: colors.background,
+      paddingBottom: 16,
     },
-    title: { ...typography.title, marginBottom: 8 },
-    subtitle: { ...typography.subtitle, marginBottom: 12 },
-    body: { ...typography.body, marginBottom: 8 },
-    card: {
-      borderRadius: 16,
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+    },
+    statusPill: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.success,
+      marginRight: 8,
+    },
+    statusText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.background,
+      marginLeft: 6,
+    },
+    closeButton: {
+      width: 38,
+      height: 38,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.surface,
+    },
+    headerTextBlock: {
+      flex: 1,
+      alignItems: 'center',
+      marginBottom: 0,
+      paddingHorizontal: 8,
+    },
+    productName: {
+      ...typography.title,
+      textAlign: 'center',
+      marginBottom: 4,
+    },
+    metaText: {
+      fontSize: 12,
+      color: colors.muted,
+    },
+    scroll: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingBottom: 24,
+    },
+    ratingCard: {
+      borderRadius: 18,
       padding: 16,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.border,
-      backgroundColor: colors.background,
+      backgroundColor: colors.success,
       marginBottom: 16,
     },
-    label: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: colors.secondary,
+    scoreRow: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 8,
+    },
+    scorePrimary: {
+      fontSize: 40,
+      fontWeight: '900',
+      color: colors.background,
+      textAlign: 'center',
+      lineHeight: 44,
+    },
+    scoreSecondary: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.background,
+      marginLeft: 6,
+      opacity: 0.9,
+    },
+    progressTrack: {
+      height: 8,
+      borderRadius: 999,
+      backgroundColor: colors.surface,
+      overflow: 'hidden',
       marginTop: 8,
     },
-    value: {
+    progressFill: {
+      height: 8,
+      borderRadius: 999,
+      backgroundColor: colors.background,
+    },
+    ratingLabel: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.background,
+      letterSpacing: 1,
+      marginBottom: 8,
+    },
+    ratingScore: {
+      fontSize: 32,
+      fontWeight: '800',
+      color: colors.background,
+    },
+    ratingSub: {
+      fontSize: 13,
+      color: colors.background,
+      marginTop: 4,
+    },
+    section: {
+      marginBottom: 18,
+      borderRadius: 16,
+      padding: 14,
+      backgroundColor: colors.surface,
+    },
+    plainSection: {
+      marginBottom: 18,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      backgroundColor: 'transparent',
+    },
+    sectionTitle: {
       fontSize: 14,
+      fontWeight: '700',
+      color: colors.text,
+      marginBottom: 8,
+    },
+    bulletRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      marginBottom: 4,
+    },
+    bulletDot: {
+      width: 4,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: colors.text,
+      marginTop: 7,
+      marginRight: 8,
+    },
+    bulletText: {
+      fontSize: 13,
+      color: colors.text,
+      flex: 1,
+    },
+    flaggedHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 4,
+    },
+    flaggedTitle: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.text,
+      marginLeft: 6,
+    },
+    flaggedBody: {
+      fontSize: 13,
       color: colors.text,
       marginTop: 4,
+    },
+    flaggedMeta: {
+      fontSize: 12,
+      color: colors.muted,
+      marginTop: 2,
+    },
+    flaggedRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: 8,
+    },
+    trendsChartRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      marginTop: 8,
+    },
+    trendsBar: {
+      flex: 1,
+      marginHorizontal: 2,
+      borderRadius: 999,
+      backgroundColor: colors.primary,
+    },
+    trendsFootnote: {
+      fontSize: 10,
+      color: colors.muted,
+      marginTop: 6,
+    },
+    altScrollRow: {
+      flexDirection: 'row',
+      marginTop: 8,
+    },
+    altCard: {
+      width: 140,
+      marginRight: 10,
+      borderRadius: 14,
+      padding: 10,
+      backgroundColor: colors.background,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
+    },
+    flaggedCard: {
+      borderRadius: 12,
+      padding: 12,
+      backgroundColor: colors.background,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
+      marginBottom: 10,
+    },
+    flaggedCardRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    flaggedCardTitle: {
+      fontSize: 14,
+      fontWeight: '800',
+      color: colors.text,
+      marginBottom: 6,
+    },
+    flaggedCardDesc: {
+      fontSize: 12,
+      color: colors.muted,
+    },
+    flaggedCardMeta: {
+      fontSize: 11,
+      color: colors.muted,
+      marginTop: 6,
+    },
+    altAvatar: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.primary,
+      marginBottom: 8,
+    },
+    altName: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    altBrand: {
+      fontSize: 12,
+      color: colors.muted,
+      marginTop: 2,
+    },
+    footerButtons: {
+      flexDirection: 'row',
+      marginTop: 16,
+      justifyContent: 'space-between',
+    },
+    buttonPrimary: {
+      flex: 1,
+      borderRadius: 999,
+      paddingVertical: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.primary,
+      marginHorizontal: 6,
+    },
+    buttonPrimaryText: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: '#ffffff',
+      letterSpacing: 1,
+    },
+    buttonSecondary: {
+      flex: 1,
+      borderRadius: 999,
+      paddingVertical: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.primary,
+      backgroundColor: colors.background,
+      marginHorizontal: 6,
+    },
+    buttonSecondaryText: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.primary,
+      letterSpacing: 1,
+    },
+    buttonTertiary: {
+      flex: 1,
+      paddingVertical: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginHorizontal: 6,
+    },
+    buttonTertiaryText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.primary,
     },
     input: {
       borderRadius: 8,
@@ -45,6 +314,7 @@ const styleFactory = (colors) =>
       paddingVertical: 8,
       color: colors.text,
       marginTop: 4,
+      backgroundColor: colors.background,
     },
     inputHint: {
       fontSize: 12,
@@ -56,15 +326,20 @@ const styleFactory = (colors) =>
 export default function AnalyseScreen() {
   const colors = useThemeColors();
   const styles = styleFactory(colors);
+  const navigation = useNavigation();
   const route = useRoute();
-   const navigation = useNavigation();
   const params = route.params || {};
+
+  const [selectedAlt, setSelectedAlt] = useState(null);
+
   const [barcode, setBarcode] = useState(params.barcode || null);
   const [ingredientsText, setIngredientsText] = useState(params.ingredientsText || null);
   const [productData, setProductData] = useState(params.productData || null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [itemName, setItemName] = useState(params.itemName || '');
+  const [isFlaggedToggleOn, setIsFlaggedToggleOn] = useState(false);
+
   const hasSavedIngredientsRef = useRef(false);
 
   const appendHistoryEntry = async (entry) => {
@@ -112,11 +387,13 @@ export default function AnalyseScreen() {
     }
   };
 
+  // Sync state with params and fetch product data as needed
   useEffect(() => {
     const nextParams = route.params || {};
     setBarcode(nextParams.barcode || null);
     setIngredientsText(nextParams.ingredientsText || null);
     setItemName(nextParams.itemName || '');
+
     if (nextParams.productData) {
       setProductData(nextParams.productData);
       setLoading(false);
@@ -144,6 +421,7 @@ export default function AnalyseScreen() {
     }
   }, [route.params]);
 
+  // Persist live ingredient scans when navigating away
   useEffect(() => {
     const currentParams = route.params || {};
     if (currentParams.source !== 'ingredients') {
@@ -152,98 +430,228 @@ export default function AnalyseScreen() {
 
     const unsubscribe = navigation.addListener('beforeRemove', () => {
       if (!hasSavedIngredientsRef.current) {
-        // Fire and forget; navigation will continue while we persist.
-        saveIngredientsHistoryIfNeeded();
+        saveIngredientsHistoryIfNeeded(itemName);
       }
     });
 
     return unsubscribe;
-  }, [navigation, route.params, saveIngredientsHistoryIfNeeded]);
+  }, [navigation, route.params, itemName, ingredientsText]);
 
   const product = productData?.product;
 
+  const displayName = useMemo(() => {
+    if (itemName && itemName.trim().length > 0) return itemName.trim();
+    if (product?.product_name) return product.product_name;
+    if (barcode) return `Barcode ${barcode}`;
+    return 'Analysis';
+  }, [itemName, product, barcode]);
+
+  const formattedScanTime = useMemo(() => {
+    if (!params.createdAt) return 'Just now';
+    try {
+      const d = new Date(params.createdAt);
+      return d.toLocaleString();
+    } catch {
+      return params.createdAt;
+    }
+  }, [params.createdAt]);
+
+  const handleClose = () => {
+    navigation.goBack();
+  };
+
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.subtitle}>
-        Review scan
-      </Text>
-
-      {loading && (
-        <Text style={styles.subtitle}>Loading product details…</Text>
-      )}
-
-      {error && (
-        <Text style={[styles.subtitle, { color: colors.secondary }]}>{error}</Text>
-      )}
-
-      {!barcode && !product && !ingredientsText && !loading && (
-        <Text style={styles.subtitle}>
-          Nothing scanned yet. Start from the Scanner tab.
-        </Text>
-      )}
-
-      {barcode && (
-        <View style={styles.card}>
-          <Text style={styles.label}>Barcode</Text>
-          <Text style={styles.value}>{barcode}</Text>
+    <View style={styles.overlayRoot}>
+      <View style={styles.headerRow}>
+        <View style={styles.statusPill}>
+          <Ionicons name="checkmark" size={20} color={colors.background} />
         </View>
-      )}
 
-      {product && (
-        <View style={styles.card}>
-          <Text style={styles.label}>Product</Text>
-          <Text style={styles.value}>{product.product_name || 'Unknown product'}</Text>
-          {product.brands ? (
-            <>
-              <Text style={styles.label}>Brand</Text>
-              <Text style={styles.value}>{product.brands}</Text>
-            </>
-          ) : null}
-          {product.generic_name ? (
-            <>
-              <Text style={styles.label}>Description</Text>
-              <Text style={styles.value}>{product.generic_name}</Text>
-            </>
-          ) : null}
-          {typeof product.completeness === 'number' && (
-            <>
-              <Text style={styles.label}>Data completeness</Text>
-              <Text style={styles.value}>{Math.round(product.completeness * 100)}%</Text>
-            </>
-          )}
-        </View>
-      )}
-
-      {(route.params?.source === 'ingredients' || route.params?.source === 'history-ingredients') && (
-        <View style={styles.card}>
-          <Text style={styles.label}>Item name</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter product name (optional)"
-            placeholderTextColor={colors.muted}
-            value={itemName}
-            onChangeText={setItemName}
-            onEndEditing={(e) => {
-              const value = e.nativeEvent.text;
-              setItemName(value);
-              if (route.params?.source === 'ingredients') {
-                saveIngredientsHistoryIfNeeded(value);
-              }
-            }}
-            returnKeyType="done"
-          />
-          <Text style={styles.inputHint}>
-            If you leave this blank, we will save it as item1, item2, etc.
+        <View style={styles.headerTextBlock}>
+          <Text style={styles.productName} numberOfLines={1} ellipsizeMode="tail">
+            {displayName}
           </Text>
+          <Text style={styles.metaText}>{formattedScanTime}</Text>
         </View>
-      )}
 
-      {ingredientsText && (
-        <View style={styles.card}>
-          <Text style={styles.label}>Ingredients (OCR)</Text>
-          <Text style={styles.value}>{ingredientsText}</Text>
+        <Pressable onPress={handleClose} style={styles.closeButton}>
+          <Ionicons name="close" size={18} color={colors.text} />
+        </Pressable>
+      </View>
+
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.ratingCard}>
+          <Text style={styles.ratingLabel}>OVERALL HEALTH RATING: GOOD</Text>
+          <View style={styles.scoreRow}>
+            <Text style={styles.scorePrimary}>
+              <Text style={styles.scorePrimary}>{/* numeric */}</Text>
+              <Text style={styles.scorePrimary}>{String((params.score ?? 85))}</Text>
+              <Text style={styles.scoreSecondary}>{`/100`}</Text>
+            </Text>
+          </View>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${Math.max(0, Math.min(100, params.score ?? 85))}%` }]} />
+          </View>
+          <Text style={styles.ratingSub}>75% cleaner than category average</Text>
         </View>
-      )}
-    </ScrollView>
+
+        <View style={styles.plainSection}>
+          <Text style={styles.sectionTitle}>Key Insights</Text>
+          <View style={styles.bulletRow}>
+            <View style={styles.bulletDot} />
+            <Text style={styles.bulletText}>4 additives found in this product.</Text>
+          </View>
+          <View style={styles.bulletRow}>
+            <View style={styles.bulletDot} />
+            <Text style={styles.bulletText}>High in dietary fibre compared to peers.</Text>
+          </View>
+        </View>
+
+        <View style={styles.plainSection}>
+          <Text style={styles.sectionTitle}>Flagged Ingredients</Text>
+          {/* Render flagged ingredients as individual cards */}
+          {(() => {
+            const list = params.flaggedIngredients || (product && product.ingredients ? product.ingredients.slice(0, 6) : []);
+            if (!list || list.length === 0) {
+              return (
+                <>
+                  <View style={styles.flaggedHeader}>
+                    <Ionicons name="warning" size={18} color={colors.warning} />
+                    <Text style={styles.flaggedTitle}>TARTRAZINE INGREDIENTS</Text>
+                  </View>
+                  <Text style={styles.flaggedBody}>
+                    Linked to hyperactivity and behavioural changes in sensitive individuals, especially children.
+                  </Text>
+                  <Text style={styles.flaggedMeta}>EU BANNED. Potential allergic reactions and intolerance responses.</Text>
+                  <View style={styles.flaggedRow}>
+                    <Text style={styles.flaggedBody}>Mark as personal allergen</Text>
+                    <Switch
+                      value={isFlaggedToggleOn}
+                      onValueChange={setIsFlaggedToggleOn}
+                      trackColor={{ false: colors.border, true: colors.primary }}
+                      thumbColor={isFlaggedToggleOn ? colors.secondary : colors.background}
+                    />
+                  </View>
+                </>
+              );
+            }
+
+            return list.map((fi, i) => {
+              const name = typeof fi === 'string' ? fi : (fi.text || fi.name || `Ingredient ${i + 1}`);
+              const desc = typeof fi === 'string' ? '' : (fi.comment || fi.description || 'Potential concerns and regulatory notes.');
+              return (
+                <View key={`${name}-${i}`} style={styles.flaggedCard}>
+                  <View style={styles.flaggedCardRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.flaggedCardTitle}>{String(name).toUpperCase()}</Text>
+                      {desc ? <Text style={styles.flaggedCardDesc}>{desc}</Text> : null}
+                      <Text style={styles.flaggedCardMeta}>Reported in similar products.</Text>
+                    </View>
+                    <View style={{ marginLeft: 12, alignItems: 'center', justifyContent: 'center' }}>
+                      <Switch
+                        value={false}
+                        onValueChange={() => {}}
+                        trackColor={{ false: colors.border, true: colors.primary }}
+                        thumbColor={colors.surface}
+                      />
+                    </View>
+                  </View>
+                </View>
+              );
+            });
+          })()}
+        </View>
+
+        <View style={styles.plainSection}>
+          <Text style={styles.sectionTitle}>YOUR CONSUMPTION TRENDS</Text>
+          <Text style={styles.flaggedBody}>
+            You scanned this product 3 times in the last 30 days.
+          </Text>
+          <Text style={styles.flaggedMeta}>Source: FDA database and internal DigInAI analysis.</Text>
+          <View style={styles.trendsChartRow}>
+            <View style={[styles.trendsBar, { height: 10, opacity: 0.5 }]} />
+            <View style={[styles.trendsBar, { height: 18, opacity: 0.7 }]} />
+            <View style={[styles.trendsBar, { height: 26 }]} />
+            <View style={[styles.trendsBar, { height: 20, opacity: 0.8 }]} />
+            <View style={[styles.trendsBar, { height: 12, opacity: 0.6 }]} />
+          </View>
+          <Text style={styles.trendsFootnote}>Daily scans over the past week</Text>
+        </View>
+
+        <View style={styles.plainSection}>
+          <Text style={styles.sectionTitle}>Healthier Alternatives</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.altScrollRow}
+          >
+            <Pressable
+              style={[
+                styles.altCard,
+                selectedAlt === 0 && { borderColor: colors.primary, borderWidth: 2 },
+              ]}
+              onPress={() => setSelectedAlt((s) => (s === 0 ? null : 0))}
+            >
+              <View style={styles.altAvatar} />
+              <Text style={styles.altBrand}>Brand X</Text>
+              <Text style={styles.altName}>Organic Oatmeal</Text>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.altCard,
+                selectedAlt === 1 && { borderColor: colors.primary, borderWidth: 2 },
+              ]}
+              onPress={() => setSelectedAlt((s) => (s === 1 ? null : 1))}
+            >
+              <View style={styles.altAvatar} />
+              <Text style={styles.altBrand}>Brand Y</Text>
+              <Text style={styles.altName}>Multi-grain Porridge</Text>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.altCard,
+                selectedAlt === 2 && { borderColor: colors.primary, borderWidth: 2 },
+              ]}
+              onPress={() => setSelectedAlt((s) => (s === 2 ? null : 2))}
+            >
+              <View style={styles.altAvatar} />
+              <Text style={styles.altBrand}>Brand Z</Text>
+              <Text style={styles.altName}>Gluten-free Oatmeal</Text>
+            </Pressable>
+          </ScrollView>
+        </View>
+
+        {/* Ingredients-related UI removed as requested */}
+
+        {loading && (
+          <View style={styles.section}>
+            <Text style={styles.flaggedBody}>Loading product details…</Text>
+          </View>
+        )}
+
+        {error && (
+          <View style={styles.section}>
+            <Text style={[styles.flaggedBody, { color: colors.error }]}>{error}</Text>
+          </View>
+        )}
+
+        {!barcode && !product && !ingredientsText && !loading && !error && (
+          <View style={styles.section}>
+            <Text style={styles.flaggedBody}>
+              Nothing scanned yet. Start from the Scanner tab to analyze a product.
+            </Text>
+          </View>
+        )}
+
+        <View style={styles.footerButtons}>
+          <Pressable style={styles.buttonPrimary}>
+            <Text style={styles.buttonPrimaryText}>SHARE ANALYSIS</Text>
+          </Pressable>
+          <Pressable style={styles.buttonSecondary}>
+            <Text style={styles.buttonSecondaryText}>BUY NOW</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    </View>
   );
 }

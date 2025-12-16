@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { Appearance } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import AppNavigator from './src/navigation/AppNavigator';
+import RootNavigator from './src/navigation/RootNavigator';
 import OnboardingNavigator from './src/navigation/OnboardingNavigator';
 import { OnboardingContext } from './src/navigation/OnboardingContext';
 import { NavigationContainer } from '@react-navigation/native';
-import { navigationTheme } from './src/theme';
+import { navigationTheme, darkNavigationTheme } from './src/theme';
 import { ThemeProvider } from './src/theme/ThemeContext';
 
 // Toggle to force showing onboarding in development
@@ -53,12 +54,15 @@ export default function App() {
     }
   };
 
+  const colorScheme = Appearance.getColorScheme?.() || 'light';
+  const navTheme = colorScheme === 'dark' ? darkNavigationTheme : navigationTheme;
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <OnboardingContext.Provider value={{ completeOnboarding }}>
         <ThemeProvider>
-          <NavigationContainer theme={navigationTheme}>
-            {showOnboarding ? <OnboardingNavigator /> : <AppNavigator />}
+          <NavigationContainer theme={navTheme}>
+            {showOnboarding ? <OnboardingNavigator /> : <RootNavigator />}
           </NavigationContainer>
         </ThemeProvider>
       </OnboardingContext.Provider>
