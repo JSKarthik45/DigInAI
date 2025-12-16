@@ -71,8 +71,7 @@ export default function HomeScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scannedData, setScannedData] = useState(null);
   const [productData, setProductData] = useState(null);
-  const [productLoading, setProductLoading] = useState(false);
-  const [productError, setProductError] = useState(null);
+  
 
   const [ingredientsScannerVisible, setIngredientsScannerVisible] = useState(false);
   const ingredientsCameraRef = useRef(null);
@@ -202,27 +201,10 @@ export default function HomeScreen() {
     setScannedData({ type, data });
     setScannerVisible(false);
     const barcode = data;
-    setProductLoading(true);
-    setProductError(null);
-    try {
-      const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
-      const apiData = await response.json();
-      setProductData(apiData);
-      const product = apiData?.product || {};
-      const productName = product.product_name || 'Unknown product';
-      const ingredientsText = product.ingredients_text || '';
-      const createdAt = new Date().toISOString();
-      await appendHistoryEntry({ type: 'barcode', barcode, productName, ingredientsText, createdAt });
-      const parentNav = navigation.getParent?.();
-      if (parentNav) {
-        parentNav.navigate('Analyse', { source: 'barcode', barcode, productData: apiData, createdAt });
-      }
-    } catch (err) {
-      console.log('Error fetching product data', err);
-      setProductError('Could not load product details.');
-      setProductData(null);
-    } finally {
-      setProductLoading(false);
+    const createdAt = new Date().toISOString();
+    const parentNav = navigation.getParent?.();
+    if (parentNav) {
+      parentNav.navigate('Analyse', { source: 'barcode', barcode, createdAt });
     }
   };
 
@@ -334,8 +316,7 @@ export default function HomeScreen() {
           </Pressable>
         </View>
         <Text style={styles.subtitleCentered}>{mode === 'barcode' ? 'Point camera at the product barcode to identify harmful additives.' : 'Point camera at the ingredients list to identify harmful additives.'}</Text>
-        {mode === 'barcode' && productLoading && <Text style={[styles.subtitleCentered, { marginTop: 8 }]}>Looking up this product…</Text>}
-        {mode === 'barcode' && productError && <Text style={[styles.subtitleCentered, { marginTop: 8, color: colors.secondary }]}>{productError}</Text>}
+        {/* Product lookup now handled in Analyse screen with its own loading overlay */}
         {mode === 'ingredients' && ingredientsProcessing && <Text style={[styles.subtitleCentered, { marginTop: 8 }]}>Analyzing ingredients photo…</Text>}
       </View>
 

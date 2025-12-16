@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, Pressable, Switch } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, Pressable, Switch, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -321,6 +321,51 @@ const styleFactory = (colors) =>
       color: colors.muted,
       marginTop: 4,
     },
+    loadingOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0,0,0,0.8)',
+    },
+    loadingCircle: {
+      width: 180,
+      height: 180,
+      borderRadius: 90,
+      backgroundColor: colors.success,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.4,
+      shadowRadius: 16,
+      elevation: 10,
+    },
+    loadingText: {
+      marginTop: 24,
+      fontSize: 18,
+      fontWeight: '700',
+      color: '#ffffff',
+      textAlign: 'center',
+    },
+    loadingSubtitle: {
+      marginTop: 6,
+      fontSize: 13,
+      color: 'rgba(255,255,255,0.75)',
+      textAlign: 'center',
+      paddingHorizontal: 32,
+    },
+    loadingBackButton: {
+      marginTop: 16,
+      paddingHorizontal: 24,
+      paddingVertical: 10,
+      borderRadius: 999,
+      backgroundColor: colors.surface,
+    },
+    loadingBackText: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.text,
+    },
   });
 
 export default function AnalyseScreen() {
@@ -394,10 +439,20 @@ export default function AnalyseScreen() {
     setIngredientsText(nextParams.ingredientsText || null);
     setItemName(nextParams.itemName || '');
 
+    // Reset any previous errors when new params arrive
+    setError(null);
+
+    // Handle ingredients OCR flows where no text was detected
+    if (nextParams.source === 'ingredients' && !nextParams.ingredientsText) {
+      setProductData(null);
+      setLoading(false);
+      setError('Could not read ingredients from photo. Please retake the picture.');
+      return;
+    }
+
     if (nextParams.productData) {
       setProductData(nextParams.productData);
       setLoading(false);
-      setError(null);
       return;
     }
 
@@ -409,6 +464,20 @@ export default function AnalyseScreen() {
           const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${nextParams.barcode}.json`);
           const apiData = await response.json();
           setProductData(apiData);
+
+          if (nextParams.source === 'barcode') {
+            const product = apiData?.product || {};
+            const productName = product.product_name || 'Unknown product';
+            const ingredientsTextFromApi = product.ingredients_text || '';
+            const createdAt = nextParams.createdAt || new Date().toISOString();
+            await appendHistoryEntry({
+              type: 'barcode',
+              barcode: nextParams.barcode,
+              productName,
+              ingredientsText: ingredientsTextFromApi,
+              createdAt,
+            });
+          }
         } catch (err) {
           console.log('Error fetching product data in Analyse', err);
           setError('Could not load product details.');
@@ -438,6 +507,8 @@ export default function AnalyseScreen() {
   }, [navigation, route.params, itemName, ingredientsText]);
 
   const product = productData?.product;
+
+  const isEmptyState = !barcode && !product && !ingredientsText && !loading && !error;
 
   const displayName = useMemo(() => {
     if (itemName && itemName.trim().length > 0) return itemName.trim();
@@ -623,26 +694,6 @@ export default function AnalyseScreen() {
 
         {/* Ingredients-related UI removed as requested */}
 
-        {loading && (
-          <View style={styles.section}>
-            <Text style={styles.flaggedBody}>Loading product details…</Text>
-          </View>
-        )}
-
-        {error && (
-          <View style={styles.section}>
-            <Text style={[styles.flaggedBody, { color: colors.error }]}>{error}</Text>
-          </View>
-        )}
-
-        {!barcode && !product && !ingredientsText && !loading && !error && (
-          <View style={styles.section}>
-            <Text style={styles.flaggedBody}>
-              Nothing scanned yet. Start from the Scanner tab to analyze a product.
-            </Text>
-          </View>
-        )}
-
         <View style={styles.footerButtons}>
           <Pressable style={styles.buttonPrimary}>
             <Text style={styles.buttonPrimaryText}>SHARE ANALYSIS</Text>
@@ -652,6 +703,39 @@ export default function AnalyseScreen() {
           </Pressable>
         </View>
       </ScrollView>
+
+      {(loading || error || isEmptyState) && (
+        <View style={styles.loadingOverlay}>
+          <View style={styles.loadingCircle}>
+            {loading ? (
+              <ActivityIndicator size="large" color="#ffffff" />
+            ) : error ? (
+              <Ionicons name="alert-circle" size={48} color="#ffffff" />
+            ) : (
+              <Ionicons name="scan-outline" size={48} color="#ffffff" />
+            )}
+          </View>
+          <Text style={styles.loadingText}>
+            {loading
+              ? 'Analyzing Contents...'
+              : error
+              ? 'Something went wrong'
+              : 'Nothing to analyze yet'}
+          </Text>
+          <Text style={styles.loadingSubtitle}>
+            {loading
+              ? 'Checking for 1000+ harmful chemicals'
+              : error
+              ? error || 'Please try again or go back.'
+              : 'Start from the Scanner tab to analyze a product.'}
+          </Text>
+          {!loading && (
+            <Pressable onPress={handleClose} style={styles.loadingBackButton}>
+              <Text style={styles.loadingBackText}>Go Back</Text>
+            </Pressable>
+          )}
+        </View>
+      )}
     </View>
   );
 }
