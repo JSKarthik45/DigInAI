@@ -52,6 +52,8 @@ const styleFactory = (colors) =>
     cropButtonSecondary: { marginRight: 8, backgroundColor: 'transparent' },
     cropButtonPrimary: { marginLeft: 8, backgroundColor: colors.primary },
     cropButtonText: { fontSize: 14, fontWeight: '600', color: colors.text },
+    cancelButtonText: { fontSize: 14, fontWeight: '600', color: colors.text },
+    cancelButton: { paddingVertical: 10, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', marginLeft: 8, backgroundColor: colors.primary },
     cropHandle: { position: 'absolute', width: 20, height: 20, borderRadius: 10, backgroundColor: colors.secondary, borderWidth: 2, borderColor: colors.background },
     ctaContent: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
   });
@@ -345,8 +347,8 @@ export default function HomeScreen() {
             ) : (
               <Text style={styles.scannerText}>Point your camera at a product barcode to see its details.</Text>
             )}
-            <Pressable onPress={() => { setScannerVisible(false); scanningRef.current = true; }} style={[styles.cropButton, styles.cropButtonPrimary]}>
-              <Text style={styles.cropButtonText}>Close</Text>
+            <Pressable onPress={() => { setScannerVisible(false); scanningRef.current = true; }} style={[styles.cancelButton]}>
+              <Text style={styles.cancelButtonText}>Close</Text>
             </Pressable>
           </View>
         </View>
