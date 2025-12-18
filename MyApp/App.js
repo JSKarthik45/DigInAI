@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Appearance } from 'react-native';
+import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import RootNavigator from './src/navigation/RootNavigator';
@@ -11,7 +11,7 @@ import { ThemeProvider } from './src/theme/ThemeContext';
 
 // Toggle to force showing onboarding in development
 // Set to true during development to always see onboarding
-const SHOW_ONBOARDING_ALWAYS = false;
+const SHOW_ONBOARDING_ALWAYS = true;
 
 const ONBOARDING_KEY = 'hasOnboarded';
 
@@ -21,7 +21,8 @@ export default function App() {
   // In dev, start in onboarding even if stored as completed,
   // but allow switching to app after finishing within the session.
   const [devSessionOnboarding, setDevSessionOnboarding] = useState(SHOW_ONBOARDING_ALWAYS);
-
+  const colorScheme = useColorScheme() || 'light';
+  const navTheme = colorScheme === 'dark' ? darkNavigationTheme : navigationTheme;
   useEffect(() => {
     const init = async () => {
       try {
@@ -35,7 +36,6 @@ export default function App() {
     };
     init();
   }, []);
-
   if (loading) {
     // While loading preferences/onboarding flag, rely on the native Expo splash.
     return null;
@@ -54,8 +54,6 @@ export default function App() {
     }
   };
 
-  const colorScheme = Appearance.getColorScheme?.() || 'light';
-  const navTheme = colorScheme === 'dark' ? darkNavigationTheme : navigationTheme;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

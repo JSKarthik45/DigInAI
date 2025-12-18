@@ -1,15 +1,13 @@
 import React, { createContext, useContext, useMemo } from 'react';
-import { Appearance } from 'react-native';
+import { useColorScheme } from 'react-native';
 import { lightColors, darkColors } from './colors';
 
-const getSystemScheme = () => Appearance.getColorScheme?.() || 'light';
-
-const ThemeContext = createContext({ colors: lightColors });
+const ThemeContext = createContext({ colors: lightColors, scheme: 'light' });
 
 export function ThemeProvider({ children }) {
-  const scheme = getSystemScheme();
+  const scheme = useColorScheme() || 'light';
   const palette = scheme === 'dark' ? darkColors : lightColors;
-  const value = useMemo(() => ({ colors: palette }), [palette]);
+  const value = useMemo(() => ({ colors: palette, scheme }), [palette, scheme]);
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
