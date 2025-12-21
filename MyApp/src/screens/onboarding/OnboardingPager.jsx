@@ -141,7 +141,7 @@ export default function OnboardingPager() {
           if (item.key === 'problem') {
             return (
               <View style={[styles.page, { width, backgroundColor: colors.background }]}> 
-                  <Text style={[styles.title, { color: colors.secondary }]}>Trusting labels blindly?</Text>
+                  <Text style={[styles.title, { color: colors.primary }]}>Trusting labels blindly?</Text>
                   <Text style={[styles.subtitle, { color: colors.muted }]}>It’s impossible to memorize every preservative. Hidden nasties often slip into your cart unnoticed.</Text>
                   <View style={{ position: 'absolute', top: 80, left: 0, right: 0, bottom: 0 }} pointerEvents="none">
                     {/* Scatter chemical / additive icons around screen (hardcoded positions) */}
@@ -176,7 +176,7 @@ export default function OnboardingPager() {
           if (item.key === 'solution') {
             return (
               <View style={[styles.page, { width, backgroundColor: colors.background }]}> 
-                <Text style={[styles.title, { color: colors.secondary }]}>Turn scans into safety checks</Text>
+                <Text style={[styles.title, { color: colors.primary }]}>Turn scans into safety checks</Text>
                 <Text style={[styles.subtitle, { color: colors.muted }]}>Scan the back, not the front. Get instant insights on synthetic colours and risky additives you should leave on the shelf.</Text>
                 <View style={{ marginTop: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18 }}>
                   <Animated.View style={{ transform: [{ translateY: floatUpDownA }] }}>
@@ -212,7 +212,7 @@ export default function OnboardingPager() {
           if (item.key === 'motivation') {
             return (
               <View style={[styles.page, { width, backgroundColor: colors.background }]}> 
-                <Text style={[styles.title, { color: colors.secondary }]}>Master your grocery list</Text>
+                <Text style={[styles.title, { color: colors.primary }]}>Master your grocery list</Text>
                 <Text style={[styles.subtitle, { color: colors.muted }]}>Small choices away from processed chemicals, toward cleaner ingredients, lead to stronger health and better habits.</Text>
                   {/* Single row of progress/habits/brain icons */}
                   <View style={{ marginTop: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18 }}>
@@ -235,7 +235,7 @@ export default function OnboardingPager() {
           if (item.key === 'pricing') {
             return (
               <View style={[styles.page, { width, backgroundColor: colors.background }]}> 
-                <Text style={[styles.title, { color: colors.secondary }]}>Pricing</Text>
+                <Text style={[styles.title, { color: colors.primary }]}>Pricing</Text>
                 <Text style={[styles.subtitle, { color: colors.muted }]}>Choose the plan that fits your grocery routine  both include a 30 day free trial.</Text>
                 <View style={{ marginTop: 24, width: '100%', flexDirection: 'row', justifyContent: 'space-between' }}>
                   <View style={{ flex: 1, marginRight: 8, borderRadius: 16, padding: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.surface }}>

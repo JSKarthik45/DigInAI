@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, Pressable, Switch, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, Pressable, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../../theme/ThemeContext';
 import { typography } from '../../theme';
@@ -15,7 +16,7 @@ const styleFactory = (colors) =>
       backgroundColor: colors.background,
       paddingTop: 40,
       paddingHorizontal: 16,
-      paddingBottom: 16,
+      paddingBottom: 0,
     },
     headerRow: {
       flexDirection: 'row',
@@ -65,7 +66,7 @@ const styleFactory = (colors) =>
       flex: 1,
     },
     scrollContent: {
-      paddingBottom: 24,
+      paddingBottom: 8,
     },
     ratingCard: {
       borderRadius: 18,
@@ -95,7 +96,7 @@ const styleFactory = (colors) =>
     progressTrack: {
       height: 8,
       borderRadius: 999,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.text,
       overflow: 'hidden',
       marginTop: 8,
     },
@@ -210,7 +211,7 @@ const styleFactory = (colors) =>
       borderRadius: 14,
       padding: 10,
       backgroundColor: colors.background,
-      borderWidth: StyleSheet.hairlineWidth,
+      borderWidth: 2,
       borderColor: colors.border,
     },
     flaggedCard: {
@@ -322,7 +323,11 @@ const styleFactory = (colors) =>
       marginTop: 4,
     },
     loadingOverlay: {
-      ...StyleSheet.absoluteFillObject,
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      // bottom is set dynamically so we don't cover OS controls
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: 'rgba(0,0,0,0.8)',
@@ -373,6 +378,7 @@ export default function AnalyseScreen() {
   const styles = styleFactory(colors);
   const navigation = useNavigation();
   const route = useRoute();
+  const insets = useSafeAreaInsets();
   const params = route.params || {};
 
   const [selectedAlt, setSelectedAlt] = useState(null);
@@ -383,7 +389,7 @@ export default function AnalyseScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [itemName, setItemName] = useState(params.itemName || '');
-  const [isFlaggedToggleOn, setIsFlaggedToggleOn] = useState(false);
+  const [thumbnail, setThumbnail] = useState(params.thumbnail || null);
 
   const hasSavedIngredientsRef = useRef(false);
 
@@ -423,6 +429,7 @@ export default function AnalyseScreen() {
         type: 'ingredients',
         itemName: finalName,
         ingredientsText,
+        thumbnail,
         createdAt: new Date().toISOString(),
       });
 
@@ -438,6 +445,7 @@ export default function AnalyseScreen() {
     setBarcode(nextParams.barcode || null);
     setIngredientsText(nextParams.ingredientsText || null);
     setItemName(nextParams.itemName || '');
+    setThumbnail(nextParams.thumbnail || null);
 
     // Reset any previous errors when new params arrive
     setError(null);
@@ -475,6 +483,7 @@ export default function AnalyseScreen() {
               barcode: nextParams.barcode,
               productName,
               ingredientsText: ingredientsTextFromApi,
+              thumbnail: nextParams.thumbnail || null,
               createdAt,
             });
           }
@@ -527,12 +536,60 @@ export default function AnalyseScreen() {
     }
   }, [params.createdAt]);
 
+  // Extract colour and emulsifier E-codes from all available ingredient text
+  const { colorCodes, emulsifierCodes } = useMemo(() => {
+    const texts = [];
+    if (typeof ingredientsText === 'string' && ingredientsText.trim().length > 0) {
+      texts.push(ingredientsText);
+    }
+    const product = productData?.product;
+    if (product?.ingredients_text) {
+      texts.push(product.ingredients_text);
+    }
+    if (Array.isArray(product?.ingredients)) {
+      const joined = product.ingredients
+        .map((ing) => ing.text || ing.id || ing.tag || '')
+        .filter(Boolean)
+        .join(', ');
+      if (joined) texts.push(joined);
+    }
+
+    const joinedAll = texts.join(' ').toUpperCase();
+    const colourSet = new Set();
+    const emulsifierSet = new Set();
+
+    const eCodeRegex = /\bE\s*([0-9]{3})\b/g;
+    let match;
+    while ((match = eCodeRegex.exec(joinedAll))) {
+      const num = parseInt(match[1], 10);
+      const code = `E${match[1]}`;
+      if (!Number.isFinite(num)) continue;
+      if (num >= 100 && num < 200) {
+        colourSet.add(code);
+      } else if (num >= 400 && num < 500) {
+        emulsifierSet.add(code);
+      }
+    }
+
+    return {
+      colorCodes: Array.from(colourSet).sort(),
+      emulsifierCodes: Array.from(emulsifierSet).sort(),
+    };
+  }, [ingredientsText, productData]);
+
+  const coloursSummaryText = colorCodes.length
+    ? colorCodes.join(', ')
+    : 'No colour additives detected.';
+  const emulsifiersSummaryText = emulsifierCodes.length
+    ? emulsifierCodes.join(', ')
+    : 'No emulsifiers detected.';
+
   const handleClose = () => {
     navigation.goBack();
   };
 
   return (
-    <View style={styles.overlayRoot}>
+    <View style={[styles.overlayRoot, { paddingBottom: insets.bottom }]}> 
       <View style={styles.headerRow}>
         <View style={styles.statusPill}>
           <Ionicons name="checkmark" size={20} color={colors.background} />
@@ -567,86 +624,45 @@ export default function AnalyseScreen() {
         </View>
 
         <View style={styles.plainSection}>
-          <Text style={styles.sectionTitle}>Key Insights</Text>
+          <Text style={styles.sectionTitle}>Colours found in this product</Text>
           <View style={styles.bulletRow}>
             <View style={styles.bulletDot} />
-            <Text style={styles.bulletText}>4 additives found in this product.</Text>
+            <Text style={styles.bulletText}>{coloursSummaryText}</Text>
           </View>
           <View style={styles.bulletRow}>
             <View style={styles.bulletDot} />
-            <Text style={styles.bulletText}>High in dietary fibre compared to peers.</Text>
+            <Text style={styles.bulletText}>{`Emulsifiers: ${emulsifiersSummaryText}`}</Text>
           </View>
         </View>
 
         <View style={styles.plainSection}>
-          <Text style={styles.sectionTitle}>Flagged Ingredients</Text>
-          {/* Render flagged ingredients as individual cards */}
-          {(() => {
-            const list = params.flaggedIngredients || (product && product.ingredients ? product.ingredients.slice(0, 6) : []);
-            if (!list || list.length === 0) {
-              return (
-                <>
-                  <View style={styles.flaggedHeader}>
-                    <Ionicons name="warning" size={18} color={colors.warning} />
-                    <Text style={styles.flaggedTitle}>TARTRAZINE INGREDIENTS</Text>
-                  </View>
-                  <Text style={styles.flaggedBody}>
-                    Linked to hyperactivity and behavioural changes in sensitive individuals, especially children.
-                  </Text>
-                  <Text style={styles.flaggedMeta}>EU BANNED. Potential allergic reactions and intolerance responses.</Text>
-                  <View style={styles.flaggedRow}>
-                    <Text style={styles.flaggedBody}>Mark as personal allergen</Text>
-                    <Switch
-                      value={isFlaggedToggleOn}
-                      onValueChange={setIsFlaggedToggleOn}
-                      trackColor={{ false: colors.border, true: colors.primary }}
-                      thumbColor={isFlaggedToggleOn ? colors.secondary : colors.background}
-                    />
-                  </View>
-                </>
-              );
-            }
-
-            return list.map((fi, i) => {
-              const name = typeof fi === 'string' ? fi : (fi.text || fi.name || `Ingredient ${i + 1}`);
-              const desc = typeof fi === 'string' ? '' : (fi.comment || fi.description || 'Potential concerns and regulatory notes.');
-              return (
-                <View key={`${name}-${i}`} style={styles.flaggedCard}>
-                  <View style={styles.flaggedCardRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.flaggedCardTitle}>{String(name).toUpperCase()}</Text>
-                      {desc ? <Text style={styles.flaggedCardDesc}>{desc}</Text> : null}
-                      <Text style={styles.flaggedCardMeta}>Reported in similar products.</Text>
+          <Text style={styles.sectionTitle}>Flagged ingredients (colours)</Text>
+          {colorCodes.length === 0 ? (
+            <Text style={styles.flaggedBody}>
+              No colour additives detected in this product.
+            </Text>
+          ) : (
+            colorCodes.map((code, i) => (
+              <View key={`${code}-${i}`} style={styles.flaggedCard}>
+                <View style={styles.flaggedCardRow}>
+                  <View style={{ flex: 1 }}>
+                    <View style={styles.flaggedHeader}>
+                      <Ionicons name="warning" size={18} color={colors.warning} />
+                      <Text style={styles.flaggedTitle}>{code}</Text>
                     </View>
-                    <View style={{ marginLeft: 12, alignItems: 'center', justifyContent: 'center' }}>
-                      <Switch
-                        value={false}
-                        onValueChange={() => {}}
-                        trackColor={{ false: colors.border, true: colors.primary }}
-                        thumbColor={colors.surface}
-                      />
-                    </View>
+                    <Text style={styles.flaggedCardDesc}>
+                      Synthetic colour additive; check local regulations and your personal sensitivity.
+                    </Text>
+                    <Text style={styles.flaggedCardMeta}>Detected in this product's ingredient list.</Text>
                   </View>
                 </View>
-              );
-            });
-          })()}
+              </View>
+            ))
+          )}
         </View>
 
         <View style={styles.plainSection}>
-          <Text style={styles.sectionTitle}>YOUR CONSUMPTION TRENDS</Text>
-          <Text style={styles.flaggedBody}>
-            You scanned this product 3 times in the last 30 days.
-          </Text>
-          <Text style={styles.flaggedMeta}>Source: FDA database and internal DigInAI analysis.</Text>
-          <View style={styles.trendsChartRow}>
-            <View style={[styles.trendsBar, { height: 10, opacity: 0.5 }]} />
-            <View style={[styles.trendsBar, { height: 18, opacity: 0.7 }]} />
-            <View style={[styles.trendsBar, { height: 26 }]} />
-            <View style={[styles.trendsBar, { height: 20, opacity: 0.8 }]} />
-            <View style={[styles.trendsBar, { height: 12, opacity: 0.6 }]} />
-          </View>
-          <Text style={styles.trendsFootnote}>Daily scans over the past week</Text>
+          {/* Consumption trends removed per request */}
         </View>
 
         <View style={styles.plainSection}>
@@ -659,7 +675,7 @@ export default function AnalyseScreen() {
             <Pressable
               style={[
                 styles.altCard,
-                selectedAlt === 0 && { borderColor: colors.primary, borderWidth: 2 },
+                selectedAlt === 0 && { borderColor: colors.primary },
               ]}
               onPress={() => setSelectedAlt((s) => (s === 0 ? null : 0))}
             >
@@ -670,7 +686,7 @@ export default function AnalyseScreen() {
             <Pressable
               style={[
                 styles.altCard,
-                selectedAlt === 1 && { borderColor: colors.primary, borderWidth: 2 },
+                selectedAlt === 1 && { borderColor: colors.primary },
               ]}
               onPress={() => setSelectedAlt((s) => (s === 1 ? null : 1))}
             >
@@ -681,7 +697,7 @@ export default function AnalyseScreen() {
             <Pressable
               style={[
                 styles.altCard,
-                selectedAlt === 2 && { borderColor: colors.primary, borderWidth: 2 },
+                selectedAlt === 2 && { borderColor: colors.primary },
               ]}
               onPress={() => setSelectedAlt((s) => (s === 2 ? null : 2))}
             >
@@ -705,7 +721,7 @@ export default function AnalyseScreen() {
       </ScrollView>
 
       {(loading || error || isEmptyState) && (
-        <View style={styles.loadingOverlay}>
+        <View style={[styles.loadingOverlay, { bottom: insets.bottom }]}> 
           <View style={styles.loadingCircle}>
             {loading ? (
               <ActivityIndicator size="large" color="#ffffff" />
