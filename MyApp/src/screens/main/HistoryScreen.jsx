@@ -120,6 +120,11 @@ export default function HistoryScreen() {
   };
 
   const getCardColors = (item) => {
+    // If a cardColor was stored with the history item, prefer that
+    if (item.cardColor) {
+      return { bg: item.cardColor, text: '#000000' };
+    }
+
     // Determine a rating value from known fields
     const raw = item.rating || item.healthRating || item.risk || item.score || item.level;
     // Normalize strings to lowercase
@@ -222,12 +227,12 @@ export default function HistoryScreen() {
                       <View style={styles.thumbnail} />
                     )}
                     <View style={styles.cardContent}>
-                      <Text style={[styles.productName, { color: colorsFor.text }]}> 
+                      <Text style={[styles.productName, { color: '#000000' }]}> 
                         {item.type === 'barcode' ? item.productName || 'Barcode scan' : item.itemName || 'Ingredients scan'}
                       </Text>
-                      <Text style={[styles.dateText, { color: colorsFor.text === '#ffffff' ? 'rgba(255,255,255,0.85)' : colors.muted }]}>{formatDate(item.createdAt)}</Text>
+                      <Text style={[styles.dateText, { color: '#000000' }]}>{formatDate(item.createdAt)}</Text>
                       {item.ingredientsText ? (
-                        <Text numberOfLines={2} style={[styles.cardSubtitle, { color: colorsFor.text === '#ffffff' ? 'rgba(255,255,255,0.9)' : colors.muted }]}>
+                        <Text numberOfLines={2} style={[styles.cardSubtitle, { color: '#000000' }]}>
                           {item.ingredientsText}
                         </Text>
                       ) : null}
