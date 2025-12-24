@@ -22,7 +22,7 @@ const styleFactory = (colors) =>
     tabIcon: { marginRight: 6 },
     centerContent: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     scanButton: { width: 220, height: 220, borderRadius: 110, alignItems: 'center', justifyContent: 'center', marginBottom: 16, overflow: 'hidden' },
-    scanButtonText: { marginTop: 8, fontSize: 18, fontWeight: '800', color: '#fff', letterSpacing: 1.5 },
+    scanButtonText: { marginTop: 8, fontSize: 18, fontWeight: '800', color: colors.background, letterSpacing: 1.5 },
     subtitleCentered: { fontSize: 14, color: colors.muted, textAlign: 'center', paddingHorizontal: 24 },
     bottomBar: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingTop: 8, paddingBottom: 4, borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.background },
     bottomItem: { alignItems: 'center', justifyContent: 'center' },
@@ -197,7 +197,7 @@ export default function HomeScreen() {
           <Pressable style={styles.scanButton} onPress={mode === 'barcode' ? openScanner : openIngredientsScanner}>
             <View pointerEvents="none" style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.primary, borderRadius: 110 }]} />
             <View style={styles.ctaContent}>
-              <Ionicons name={mode === 'barcode' ? 'scan' : 'document-text'} size={76} color="#fff" />
+              <Ionicons name={mode === 'barcode' ? 'scan' : 'document-text'} size={76} color={colors.background} />
               <Text style={styles.scanButtonText}>TAP TO SCAN</Text>
             </View>
           </Pressable>

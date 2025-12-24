@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useColorScheme } from 'react-native';
+import { StatusBar, useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import RootNavigator from './src/navigation/RootNavigator';
@@ -59,6 +59,11 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <OnboardingContext.Provider value={{ completeOnboarding }}>
         <ThemeProvider>
+          <StatusBar
+            barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
+            backgroundColor={navTheme.colors.background}
+            translucent={false}
+          />
           <NavigationContainer theme={navTheme}>
             {showOnboarding ? <OnboardingNavigator /> : <RootNavigator />}
           </NavigationContainer>

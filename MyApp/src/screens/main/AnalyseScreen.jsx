@@ -291,7 +291,7 @@ const styleFactory = (colors) =>
     buttonPrimaryText: {
       fontSize: 14,
       fontWeight: '700',
-      color: '#ffffff',
+      color: colors.background,
       letterSpacing: 1,
     },
     buttonSecondary: {
@@ -520,32 +520,6 @@ export default function AnalyseScreen() {
     return unsubscribe;
   }, [navigation, route.params, itemName, ingredientsText]);
 
-  // After barcode scan analysis is available, save history entry with label & card color
-  useEffect(() => {
-    const currentParams = route.params || {};
-    if (currentParams.source !== 'barcode') return;
-    if (!productData?.product) return;
-    if (hasSavedBarcodeRef.current) return;
-
-    const product = productData.product || {};
-    const productName = product.product_name || 'Unknown product';
-    const ingredientsTextFromApi = product.ingredients_text || '';
-    const createdAt = currentParams.createdAt || new Date().toISOString();
-
-    appendHistoryEntry({
-      type: 'barcode',
-      barcode: currentParams.barcode,
-      productName,
-      ingredientsText: ingredientsTextFromApi,
-      thumbnail: currentParams.thumbnail || null,
-      createdAt,
-      healthLabel,
-      cardColor: ratingColor,
-    });
-
-    hasSavedBarcodeRef.current = true;
-  }, [route.params, productData, healthLabel, ratingColor]);
-
   // Load colour metadata (name, common name, warning/banned countries) from AsyncStorage.
   // If missing, seed AsyncStorage with DEFAULT_COLOUR_INFO_MAP.
   useEffect(() => {
@@ -616,8 +590,9 @@ export default function AnalyseScreen() {
     }
   }, [params.createdAt]);
 
-  // Extract only food colour E-codes from OpenFoodFacts `product.ingredients_tags`.
-  // Ignore other ingredient sources per request.
+  // Extract only food colour E-codes from available ingredient information.
+  // For barcode scans we read OpenFoodFacts `product.ingredients_tags`.
+  // For ingredients photo scans we read the OCR-detected `ingredientsText`.
   const { colorCodes, emulsifierCodes } = useMemo(() => {
     const colourSet = new Set();
 
@@ -646,11 +621,42 @@ export default function AnalyseScreen() {
       }
     }
 
+    // Additionally, extract colour codes directly from OCR text when present
+    if (typeof ingredientsText === 'string' && ingredientsText.trim().length > 0) {
+      const lower = ingredientsText.toLowerCase();
+
+      // 1) Detect explicit E-codes such as "E102", "e-110a", "e 129" etc.
+      for (const match of lower.matchAll(/\be[\s-]?([0-9]{2,3}[a-z]?)/g)) {
+        const body = match[1];
+        const num = parseInt(body, 10);
+        if (!Number.isFinite(num)) continue;
+        if (num >= 100 && num < 200) {
+          const code = `E${body}`.toUpperCase();
+          colourSet.add(code);
+        }
+      }
+
+      // 2) Detect numeric codes listed after words like "colour"/"color",
+      //    e.g. "Colours (102, 110, 129)" or "Color: 102; 110".
+      for (const match of lower.matchAll(/\b(?:colour|color)s?[^0-9]{0,15}([0-9 ,;\/-]+)/g)) {
+        const group = match[1] || '';
+        const nums = Array.from(group.matchAll(/(\d{3})/g), (m) => m[1]);
+        for (const rawNum of nums) {
+          const num = parseInt(rawNum, 10);
+          if (!Number.isFinite(num)) continue;
+          if (num >= 100 && num < 200) {
+            const code = `E${rawNum}`.toUpperCase();
+            colourSet.add(code);
+          }
+        }
+      }
+    }
+
     return {
       colorCodes: Array.from(colourSet).sort(),
       emulsifierCodes: [],
     };
-  }, [productData]);
+  }, [productData, ingredientsText]);
 
   // Enrich detected colour codes with metadata from AsyncStorage (if available)
   // and keep only those that have warning or banned countries configured.
@@ -748,6 +754,32 @@ export default function AnalyseScreen() {
     // poor / fallback
     return (colors.danger || '#ff3b30');
   }, [healthLabel, colors]);
+
+  // After barcode scan analysis is available, save history entry with label & card color
+  useEffect(() => {
+    const currentParams = route.params || {};
+    if (currentParams.source !== 'barcode') return;
+    if (!productData?.product) return;
+    if (hasSavedBarcodeRef.current) return;
+
+    const product = productData.product || {};
+    const productName = product.product_name || 'Unknown product';
+    const ingredientsTextFromApi = product.ingredients_text || '';
+    const createdAt = currentParams.createdAt || new Date().toISOString();
+
+    appendHistoryEntry({
+      type: 'barcode',
+      barcode: currentParams.barcode,
+      productName,
+      ingredientsText: ingredientsTextFromApi,
+      thumbnail: currentParams.thumbnail || null,
+      createdAt,
+      healthLabel,
+      cardColor: ratingColor,
+    });
+
+    hasSavedBarcodeRef.current = true;
+  }, [route.params, productData, healthLabel, ratingColor]);
 
   const handleClose = () => {
     navigation.goBack();
@@ -902,8 +934,8 @@ export default function AnalyseScreen() {
           <Pressable style={styles.buttonPrimary}>
             <Text style={styles.buttonPrimaryText}>SHARE ANALYSIS</Text>
           </Pressable>
-          <Pressable style={styles.buttonSecondary}>
-            <Text style={styles.buttonSecondaryText}>BUY NOW</Text>
+          <Pressable onPress={handleClose} style={styles.buttonSecondary}>
+            <Text style={styles.buttonSecondaryText}>BACK</Text>
           </Pressable>
         </View>
       </ScrollView>

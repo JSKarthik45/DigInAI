@@ -62,7 +62,7 @@ const styleFactory = (colors) => StyleSheet.create({
   ctaText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#fff',
+    color: colors.background,
   },
 });
 
@@ -183,7 +183,7 @@ export default function OnboardingPager() {
                     <Ionicons name="shield" size={36} color={colors.primary} />
                   </Animated.View>
                   <Animated.View style={{ transform: [{ translateY: floatUpDownB }] }}>
-                    <Ionicons name="barcode" size={36} color={colors.secondary} />
+                    <Ionicons name="barcode" size={36} color={colors.primary} />
                   </Animated.View>
                   <Animated.View style={{ transform: [{ translateY: floatUpDownA }] }}>
                     <Ionicons name="analytics" size={34} color={colors.text} />
@@ -220,7 +220,7 @@ export default function OnboardingPager() {
                       <Ionicons name="leaf" size={36} color={colors.primary} />
                     </Animated.View>
                     <Animated.View style={{ transform: [{ translateY: floatUpDownB }] }}>
-                      <Ionicons name="nutrition" size={36} color={colors.secondary} />
+                      <Ionicons name="nutrition" size={36} color={colors.primary} />
                     </Animated.View>
                     <Animated.View style={{ transform: [{ translateY: floatUpDownA }] }}>
                       <Ionicons name="heart" size={36} color={colors.text} />
