@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, Pressable, ActivityIndicator, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -410,6 +410,7 @@ export default function AnalyseScreen() {
 
   const hasSavedIngredientsRef = useRef(false);
   const hasSavedBarcodeRef = useRef(false);
+  const hasOfferedBarcodeFallbackRef = useRef(false);
 
   const appendHistoryEntry = async (entry) => {
     try {
@@ -417,9 +418,7 @@ export default function AnalyseScreen() {
       const list = raw ? JSON.parse(raw) : [];
       const updated = [{ id: Date.now().toString(), ...entry }, ...list];
       await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
-    } catch (err) {
-      console.log('Error updating history in Analyse', err);
-    }
+    } catch (err) {}
   };
 
   const saveIngredientsHistoryIfNeeded = async (nameFromInput) => {
@@ -454,9 +453,7 @@ export default function AnalyseScreen() {
       });
 
       hasSavedIngredientsRef.current = true;
-    } catch (err) {
-      console.log('Error saving ingredients history from Analyse', err);
-    }
+    } catch (err) {}
   };
 
   // Sync state with params and fetch product data as needed
@@ -493,7 +490,6 @@ export default function AnalyseScreen() {
           const apiData = await response.json();
           setProductData(apiData);
         } catch (err) {
-          console.log('Error fetching product data in Analyse', err);
           setError('Could not load product details.');
           setProductData(null);
         } finally {
@@ -553,15 +549,12 @@ export default function AnalyseScreen() {
           // persist merged map back to storage to include explanations
           try {
             await AsyncStorage.setItem(COLOUR_INFO_KEY, JSON.stringify(merged));
-          } catch (e) {
-            console.log('Error persisting merged colour info map', e);
-          }
+          } catch (e) {}
           setColourInfoMap(merged);
         } else {
           setColourInfoMap(DEFAULT_COLOUR_INFO_MAP);
         }
       } catch (err) {
-        console.log('Error loading colour info map', err);
         setColourInfoMap(DEFAULT_COLOUR_INFO_MAP);
       }
     };
@@ -621,7 +614,9 @@ export default function AnalyseScreen() {
       }
     }
 
-    // Additionally, extract colour codes directly from OCR text when present
+    // Additionally, extract colour codes directly from OCR text when present.
+    // This logic is tailored to how ingredients are written on packaging
+    // rather than how OpenFoodFacts tags ingredients.
     if (typeof ingredientsText === 'string' && ingredientsText.trim().length > 0) {
       const lower = ingredientsText.toLowerCase();
 
@@ -636,11 +631,25 @@ export default function AnalyseScreen() {
         }
       }
 
+      // 1b) Detect INS codes such as "INS 102" or "ins110" and map them to E-codes.
+      for (const match of lower.matchAll(/\bins\s*([0-9]{3}[a-z]?)/g)) {
+        const body = match[1];
+        const num = parseInt(body, 10);
+        if (!Number.isFinite(num)) continue;
+        if (num >= 100 && num < 200) {
+          const code = `E${body}`.toUpperCase();
+          colourSet.add(code);
+        }
+      }
+
       // 2) Detect numeric codes listed after words like "colour"/"color",
       //    e.g. "Colours (102, 110, 129)" or "Color: 102; 110".
-      for (const match of lower.matchAll(/\b(?:colour|color)s?[^0-9]{0,15}([0-9 ,;\/-]+)/g)) {
-        const group = match[1] || '';
-        const nums = Array.from(group.matchAll(/(\d{3})/g), (m) => m[1]);
+      //    We grab the rest of the line after "colours" and then pull
+      //    out every 3-digit sequence, so formats like
+      //    "COLOURS (150a, 150c 150d. 122. 110. 133 &" still work.
+      for (const match of lower.matchAll(/\b(?:colour|color)s?[^0-9]{0,15}([^\n\r]+)/g)) {
+        const segment = match[1] || '';
+        const nums = Array.from(segment.matchAll(/(\d{3})/g), (m) => m[1]);
         for (const rawNum of nums) {
           const num = parseInt(rawNum, 10);
           if (!Number.isFinite(num)) continue;
@@ -754,6 +763,57 @@ export default function AnalyseScreen() {
     // poor / fallback
     return (colors.danger || '#ff3b30');
   }, [healthLabel, colors]);
+
+  // Debug logging for detected colour codes removed for production
+
+  // If barcode lookup fails or yields no colour codes from the API,
+  // prompt the user to scan the ingredients list instead.
+  useEffect(() => {
+    const currentParams = route.params || {};
+    if (currentParams.source !== 'barcode') return;
+    if (loading) return;
+    if (!productData) return;
+    if (hasOfferedBarcodeFallbackRef.current) return;
+
+    const status = typeof productData.status === 'number' ? productData.status : null;
+    const notFound = status === 0 || !productData.product;
+    const noColoursFromApi = Array.isArray(colorCodes) && colorCodes.length === 0;
+
+    if (!notFound && !noColoursFromApi) {
+      return;
+    }
+
+    hasOfferedBarcodeFallbackRef.current = true;
+
+    Alert.alert(
+      'Scan ingredients instead',
+      notFound
+        ? 'Could not find this barcode in our database. Please scan the ingredients list photo instead.'
+        : 'No colour additives were found from the barcode data. Please scan the ingredients list photo to analyze colours.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: () => {
+            navigation.goBack();
+          },
+        },
+        {
+          text: 'Scan ingredients',
+          onPress: () => {
+            const parentNav = navigation.getParent?.();
+            if (parentNav) {
+              parentNav.navigate('MainTabs', {
+                screen: 'Scanner',
+                params: { startIngredientsScan: true },
+              });
+            }
+            navigation.goBack();
+          },
+        },
+      ]
+    );
+  }, [route.params, loading, productData, colorCodes, navigation]);
 
   // After barcode scan analysis is available, save history entry with label & card color
   useEffect(() => {

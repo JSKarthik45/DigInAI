@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { View, Text, StyleSheet, Pressable, TextInput } from 'react-native';
+import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImageManipulator from 'expo-image-manipulator';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -44,7 +44,7 @@ const styleFactory = (colors) =>
     footerButtonsRow: { flexDirection: 'row', marginTop: 20, justifyContent: 'space-between', width: '100%' },
     footerButton: { flex: 1, paddingVertical: 10, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
     footerButtonSecondary: { marginRight: 8, backgroundColor: colors.background },
-    footerButtonPrimary: { marginLeft: 8, backgroundColor: colors.primary },
+    footerButtonPrimary: { marginLeft: 8, backgroundColor: colors.primary},
     footerButtonText: { fontSize: 14, fontWeight: '600', color: colors.text },
     cancelButtonText: { fontSize: 14, fontWeight: '600', color: colors.text },
     // Make barcode scanner close match ingredients scanner: white background, no border, and same top margin
@@ -58,6 +58,7 @@ export default function HomeScreen() {
   const styles = useThemedStyles(styleFactory);
   const colors = useThemeColors();
   const navigation = useNavigation();
+  const route = useRoute();
 
   const [mode, setMode] = useState('barcode');
   const [scannerVisible, setScannerVisible] = useState(false);
@@ -72,6 +73,9 @@ export default function HomeScreen() {
   const [ingredientsText, setIngredientsText] = useState(null);
   const [ingredientsProcessing, setIngredientsProcessing] = useState(false);
   const scanningRef = useRef(true);
+  const [namePromptVisible, setNamePromptVisible] = useState(false);
+  const [itemNameDraft, setItemNameDraft] = useState('');
+  const [pendingIngredients, setPendingIngredients] = useState(null); // { uri, text }
 
   const appendHistoryEntry = async (entry) => {
     try {
@@ -79,19 +83,26 @@ export default function HomeScreen() {
       const list = raw ? JSON.parse(raw) : [];
       const updated = [{ id: Date.now().toString(), ...entry }, ...list];
       await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
-    } catch (err) {
-      console.log('Error updating history', err);
-    }
+    } catch (err) {}
   };
 
   // Ensure overlays are reset whenever we return to the Home screen
   useFocusEffect(
     useCallback(() => {
+      const params = route.params || {};
+      if (params.mode === 'ingredients') {
+        setMode('ingredients');
+      }
+      if (params.startIngredientsScan) {
+        setMode('ingredients');
+        openIngredientsScanner();
+        navigation.setParams?.({ ...params, startIngredientsScan: false });
+      }
       setScannerVisible(false);
       setIngredientsScannerVisible(false);
       setScannedData(null);
       return () => {};
-    }, [])
+    }, [route.params])
   );
 
   const openScanner = async () => {
@@ -124,9 +135,7 @@ export default function HomeScreen() {
         const photo = await barcodeCameraRef.current.takePictureAsync({ quality: 0.5, base64: false });
         thumbnailUri = photo?.uri || null;
       }
-    } catch (err) {
-      console.log('Error capturing barcode thumbnail', err);
-    }
+    } catch (err) {}
     setScannedData({ type, data });
     const barcode = data;
     const createdAt = new Date().toISOString();
@@ -148,7 +157,6 @@ export default function HomeScreen() {
       if (typeof result.text === 'string') return result.text.trim();
       return '';
     } catch (err) {
-      console.log('ML Kit text recognition error', err);
       return '';
     }
   };
@@ -158,12 +166,14 @@ export default function HomeScreen() {
       setIngredientsProcessing(true);
       const text = await recognizeIngredientsFromImage(uri);
       setIngredientsText(text);
-      const parentNav = navigation.getParent?.();
-      if (parentNav) {
-        parentNav.navigate('Analyse', { source: 'ingredients', ingredientsText: text, thumbnail: thumbnailUri || uri });
-      }
+      setPendingIngredients((prev) => {
+        const baseUri = thumbnailUri || uri;
+        if (prev && prev.uri === baseUri) {
+          return { ...prev, text };
+        }
+        return { uri: baseUri, text };
+      });
     } catch (err) {
-      console.log('Error capturing or processing ingredients photo', err);
     } finally {
       setIngredientsProcessing(false);
     }
@@ -173,10 +183,38 @@ export default function HomeScreen() {
     if (!ingredientsCameraRef.current) return;
     try {
       const photo = await ingredientsCameraRef.current.takePictureAsync({ quality: 0.8, base64: false });
-      await runIngredientsOcrFlow(photo.uri, photo.uri);
-    } catch (err) {
-      console.log('Error capturing or processing ingredients photo', err);
+      setPendingIngredients({ uri: photo.uri, text: '' });
+      setItemNameDraft('');
+      setNamePromptVisible(true);
+      // Run OCR in the background so the name prompt appears immediately
+      runIngredientsOcrFlow(photo.uri, photo.uri);
+    } catch (err) {}
+  };
+
+  const handleConfirmItemName = () => {
+    if (!pendingIngredients) {
+      setNamePromptVisible(false);
+      return;
     }
+    const parentNav = navigation.getParent?.();
+    const finalName = itemNameDraft.trim();
+    if (parentNav) {
+      parentNav.navigate('Analyse', {
+        source: 'ingredients',
+        ingredientsText: pendingIngredients.text || '',
+        thumbnail: pendingIngredients.uri,
+        itemName: finalName,
+      });
+    }
+    setNamePromptVisible(false);
+    setPendingIngredients(null);
+    setItemNameDraft('');
+  };
+
+  const handleCancelItemName = () => {
+    setNamePromptVisible(false);
+    setPendingIngredients(null);
+    setItemNameDraft('');
   };
 
   return (
@@ -256,10 +294,35 @@ export default function HomeScreen() {
                 <Text style={styles.footerButtonText}>Cancel</Text>
               </Pressable>
               <Pressable onPress={captureIngredientsPhoto} style={[styles.footerButton, styles.footerButtonPrimary]}>
-                <Text style={styles.footerButtonText}>Capture</Text>
+                <Text style={{...styles.footerButtonText, color: colors.background}}>Capture</Text>
               </Pressable>
             </View>
           </View>
+
+          {namePromptVisible && (
+            <View style={[StyleSheet.absoluteFillObject, { justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)' }]}> 
+              <View style={{ width: '85%', borderRadius: 16, marginBottom: 75, padding: 16, backgroundColor: colors.surface }}>
+                <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Name this scan</Text>
+                <Text style={{ marginTop: 6, fontSize: 13, color: colors.muted }}>Give this item a name so you can recognise it in your history.</Text>
+                <TextInput
+                  style={{ marginTop: 12, borderRadius: 8, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: 8, color: colors.text, backgroundColor: colors.background }}
+                  placeholder="e.g. Cereal box, Chips packet"
+                  placeholderTextColor={colors.muted}
+                  value={itemNameDraft}
+                  onChangeText={setItemNameDraft}
+                  autoFocus
+                />
+                <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16 }}>
+                  <Pressable onPress={handleCancelItemName} style={{ paddingVertical: 8, paddingHorizontal: 12, marginRight: 8 }}>
+                    <Text style={{ color: colors.muted, fontSize: 14 }}>Cancel</Text>
+                  </Pressable>
+                  <Pressable onPress={handleConfirmItemName} style={{ paddingVertical: 8, paddingHorizontal: 16, borderRadius: 999, backgroundColor: colors.primary }}>
+                    <Text style={{ color: colors.background, fontSize: 14, fontWeight: '700' }}>Continue</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          )}
         </View>
       )}
     </View>

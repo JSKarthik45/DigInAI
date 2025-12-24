@@ -81,9 +81,7 @@ export default function HistoryScreen() {
           if (isActive) {
             setItems(list);
           }
-        } catch (err) {
-          console.log('Error loading history', err);
-        }
+        } catch (err) {}
       };
       load();
       return () => {
@@ -97,9 +95,7 @@ export default function HistoryScreen() {
       const nextItems = items.filter((it) => it.id !== id);
       setItems(nextItems);
       await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(nextItems));
-    } catch (err) {
-      console.log('Error deleting history item', err);
-    }
+    } catch (err) {}
   };
 
   const renderRightActions = (progress, dragX) => {
