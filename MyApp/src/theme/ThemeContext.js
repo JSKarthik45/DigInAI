@@ -1,14 +1,35 @@
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useMemo, useCallback } from 'react';
 import { useColorScheme } from 'react-native';
 import { lightColors, darkColors } from './colors';
 
-const ThemeContext = createContext({ colors: lightColors, scheme: 'light' });
+const ThemeContext = createContext({ 
+  colors: lightColors, 
+  scheme: 'light',
+  isDark: false,
+});
 
 export function ThemeProvider({ children }) {
   const scheme = useColorScheme() || 'light';
   const palette = scheme === 'dark' ? darkColors : lightColors;
-  const value = useMemo(() => ({ colors: palette, scheme }), [palette, scheme]);
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  
+  const value = useMemo(
+    () => ({ 
+      colors: palette, 
+      scheme,
+      isDark: scheme === 'dark',
+    }), 
+    [palette, scheme]
+  );
+  
+  return (
+    <ThemeContext.Provider value={value}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+
+export function useTheme() {
+  return useContext(ThemeContext);
 }
 
 export function useThemeColors() {
@@ -17,6 +38,6 @@ export function useThemeColors() {
 }
 
 export function useThemedStyles(factory) {
-  const palette = useThemeColors();
-  return useMemo(() => factory(palette), [factory, palette]);
+  const { colors } = useContext(ThemeContext);
+  return useMemo(() => factory(colors), [factory, colors]);
 }
