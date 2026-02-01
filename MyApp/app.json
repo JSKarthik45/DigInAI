@@ -2,7 +2,7 @@
   "expo": {
     "name": "DigIn AI",
     "slug": "dig-in-ai",
-    "version": "1.0.0",
+    "version": "0.4.0",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "automatic",

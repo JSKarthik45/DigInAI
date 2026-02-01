@@ -29,7 +29,7 @@ export default function HistoryItemCard({
 
     return (
       <Animated.View style={[styles.deleteAction, { opacity, transform: [{ scale }] }]}>
-        <Ionicons name="trash" size={24} color="#fff" />
+        <Ionicons name="trash" size={30} color="#fff" />
       </Animated.View>
     );
   };
@@ -76,14 +76,14 @@ export default function HistoryItemCard({
                 {displayName}
               </Text>
               <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
-              {item.ingredientsText ? (
-                <Text numberOfLines={2} style={styles.subtitle}>
-                  {item.ingredientsText}
+              {item.colorCodes && item.colorCodes.length > 0 ? (
+                <Text numberOfLines={1} style={styles.subtitle}>
+                  {item.colorCodes.join(', ')}
                 </Text>
               ) : null}
             </View>
             <View style={styles.indicator}>
-              <Ionicons name="chevron-forward" size={20} color="rgba(0,0,0,0.4)" />
+              <Ionicons name="chevron-forward" size={30} color="rgba(0,0,0,0.4)" />
             </View>
           </View>
         </Pressable>
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   indicator: {
-    width: 24,
+    width: 30,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -150,6 +150,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#dc2626',
     borderRadius: 12,
-    marginBottom: 10,
   },
 });

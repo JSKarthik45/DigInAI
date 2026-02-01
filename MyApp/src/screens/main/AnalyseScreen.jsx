@@ -69,7 +69,7 @@ const createStyles = (colors) =>
     },
     footerButtons: {
       flexDirection: 'row',
-      marginTop: 16,
+      marginTop: 8,
       gap: 12,
     },
   });
@@ -342,7 +342,7 @@ export default function AnalyseScreen() {
       await appendHistoryEntry({
         type: 'ingredients',
         itemName: finalName,
-        ingredientsText,
+        colorCodes,
         thumbnail,
         createdAt: new Date().toISOString(),
         healthLabel,
@@ -353,7 +353,7 @@ export default function AnalyseScreen() {
     } catch (err) {
       console.warn('Failed to save ingredients history:', err);
     }
-  }, [ingredientsText, itemName, thumbnail, healthLabel, ratingColor]);
+  }, [ingredientsText, itemName, thumbnail, healthLabel, ratingColor, colorCodes]);
 
   // Sync with route params
   useEffect(() => {
@@ -448,7 +448,7 @@ export default function AnalyseScreen() {
       type: 'barcode',
       barcode: route.params.barcode,
       productName: productData.product.product_name || 'Unknown product',
-      ingredientsText: productData.product.ingredients_text || '',
+      colorCodes,
       thumbnail: route.params.thumbnail,
       createdAt: route.params.createdAt || new Date().toISOString(),
       healthLabel,
@@ -515,6 +515,7 @@ export default function AnalyseScreen() {
             variant="primary" 
             onPress={() => {}}
             style={{ flex: 1 }}
+            textStyle={{ textAlign: 'center' }}
           />
           <Button 
             title="BACK" 

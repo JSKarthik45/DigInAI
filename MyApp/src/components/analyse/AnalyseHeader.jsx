@@ -18,7 +18,7 @@ export default function AnalyseHeader({
   return (
     <View style={[styles.container, style]}>
       <View style={[styles.statusPill, { backgroundColor: ratingColor }]}>
-        <Ionicons name="checkmark" size={20} color={colors.background} />
+        <Ionicons name="checkmark" size={30} color={colors.background} />
       </View>
 
       <View style={styles.textBlock}>
@@ -29,7 +29,7 @@ export default function AnalyseHeader({
       </View>
 
       <Pressable onPress={onClose} style={[styles.closeButton, { backgroundColor: colors.surface }]}>
-        <Ionicons name="close" size={18} color={colors.text} />
+        <Ionicons name="close" size={30} color={colors.text} />
       </Pressable>
     </View>
   );
@@ -43,9 +43,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   statusPill: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -64,9 +64,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   closeButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 18,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
   },

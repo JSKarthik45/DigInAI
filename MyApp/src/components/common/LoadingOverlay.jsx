@@ -22,12 +22,12 @@ export default function LoadingOverlay({
 
   const getIcon = () => {
     if (loading) {
-      return <ActivityIndicator size="large" color="#ffffff" />;
+      return <ActivityIndicator size={84} color="#ffffff" />;
     }
     if (error) {
-      return <Ionicons name="alert-circle" size={48} color="#ffffff" />;
+      return <Ionicons name="alert-circle" size={84} color="#ffffff" />;
     }
-    return <Ionicons name="scan-outline" size={48} color="#ffffff" />;
+    return <Ionicons name="scan-outline" size={84} color="#ffffff" />;
   };
 
   const getTitle = () => {
