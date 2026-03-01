@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "DigIn AI",
-    "slug": "dig-in-ai",
+    "name": "Hue",
+    "slug": "hue",
     "version": "0.4.0",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
@@ -16,7 +16,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.example.diginai",
+      "package": "com.example.hue",
       "useNextNotificationsApi": true,
       "permissions": [
         "android.permission.FOREGROUND_SERVICE",
