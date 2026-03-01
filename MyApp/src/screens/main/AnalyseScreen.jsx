@@ -212,10 +212,12 @@ const calculateHealthScore = (colorCodes, flaggedColours) => {
   );
   const score = Math.max(0, Math.round(100 - penalty));
 
-  let label = 'Good';
-  if (score < 50) label = 'Poor';
-  else if (score < 70) label = 'Caution';
-  else if (score < 85) label = 'Moderate';
+  let label = 'Excellent';
+  if (score < 20) label = 'Dangerous';
+  else if (score < 40) label = 'Poor';
+  else if (score < 60) label = 'Caution';
+  else if (score < 75) label = 'Moderate';
+  else if (score < 90) label = 'Good';
 
   return { score, label };
 };
@@ -312,10 +314,12 @@ export default function AnalyseScreen() {
 
   const ratingColor = useMemo(() => {
     const lbl = (healthLabel || '').toLowerCase();
-    if (lbl === 'good') return colors.success;
-    if (lbl === 'moderate') return colors.primary;
-    if (lbl === 'caution') return colors.warning;
-    return colors.danger;
+    if (lbl === 'excellent') return colors.ratingExcellent;
+    if (lbl === 'good') return colors.ratingGood;
+    if (lbl === 'moderate') return colors.ratingModerate;
+    if (lbl === 'caution') return colors.ratingCaution;
+    if (lbl === 'poor') return colors.ratingPoor;
+    return colors.ratingDangerous;
   }, [healthLabel, colors]);
 
   // Save ingredients history
@@ -342,6 +346,7 @@ export default function AnalyseScreen() {
       await appendHistoryEntry({
         type: 'ingredients',
         itemName: finalName,
+        ingredientsText,
         colorCodes,
         thumbnail,
         createdAt: new Date().toISOString(),
@@ -448,6 +453,7 @@ export default function AnalyseScreen() {
       type: 'barcode',
       barcode: route.params.barcode,
       productName: productData.product.product_name || 'Unknown product',
+      ingredientsText,
       colorCodes,
       thumbnail: route.params.thumbnail,
       createdAt: route.params.createdAt || new Date().toISOString(),
@@ -470,6 +476,7 @@ export default function AnalyseScreen() {
         productName={displayName}
         scanTime={formattedScanTime}
         ratingColor={ratingColor}
+        score={healthScore}
         onClose={handleClose}
       />
 

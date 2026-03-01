@@ -15,37 +15,44 @@ export default function HealthRatingCard({
   const bgColor = backgroundColor || colors.success;
   
   const getMessage = () => {
-    if (score >= 85) return 'This product looks good';
-    if (score >= 70) return 'Some concerns';
-    if (score >= 50) return 'Exercise caution';
-    return 'High risk — avoid if possible';
+    if (score >= 90) return 'Excellent — this product looks clean';
+    if (score >= 75) return 'Good — minor concerns only';
+    if (score >= 60) return 'Moderate — some ingredients to watch';
+    if (score >= 40) return 'Caution — several flagged ingredients';
+    if (score >= 20) return 'Poor — multiple harmful additives found';
+    return 'Dangerous — avoid this product if possible';
   };
+
+  // White text on all rating backgrounds for contrast
+  const textColor = '#ffffff';
+  const trackColor = 'rgba(255,255,255,0.3)';
+  const fillColor = 'rgba(255,255,255,0.9)';
 
   return (
     <View style={[styles.container, { backgroundColor: bgColor }, style]}>
-      <Text style={[styles.label, { color: colors.background }]}>
+      <Text style={[styles.label, { color: textColor }]}>
         {`OVERALL HEALTH RATING: ${label.toUpperCase()}`}
       </Text>
       <View style={styles.scoreRow}>
-        <Text style={[styles.scorePrimary, { color: colors.background }]}>
+        <Text style={[styles.scorePrimary, { color: textColor }]}>
           {String(score)}
         </Text>
-        <Text style={[styles.scoreSecondary, { color: colors.background }]}>
+        <Text style={[styles.scoreSecondary, { color: textColor }]}>
           /100
         </Text>
       </View>
-      <View style={[styles.progressTrack, { backgroundColor: colors.background }]}>
+      <View style={[styles.progressTrack, { backgroundColor: trackColor }]}>
         <View 
           style={[
             styles.progressFill, 
             { 
               width: `${Math.max(0, Math.min(100, score))}%`,
-              backgroundColor: colors.text,
+              backgroundColor: fillColor,
             }
           ]} 
         />
       </View>
-      <Text style={[styles.message, { color: colors.background }]}>
+      <Text style={[styles.message, { color: textColor }]}>
         {getMessage()}
       </Text>
     </View>

@@ -20,6 +20,12 @@ export default function LoadingOverlay({
 
   if (!visible) return null;
 
+  const getCircleColor = () => {
+    if (loading) return colors.accent;
+    if (error) return colors.error;
+    return colors.muted;
+  };
+
   const getIcon = () => {
     if (loading) {
       return <ActivityIndicator size={84} color="#ffffff" />;
@@ -46,7 +52,7 @@ export default function LoadingOverlay({
 
   return (
     <View style={[styles.overlay, { bottom: bottomInset }]}>
-      <View style={[styles.circle, { backgroundColor: colors.success }]}>
+      <View style={[styles.circle, { backgroundColor: getCircleColor() }]}>
         {getIcon()}
       </View>
       <Text style={styles.title}>{getTitle()}</Text>

@@ -48,6 +48,12 @@ export default function HistoryItemCard({
     ? item.productName || 'Barcode scan' 
     : item.itemName || 'Ingredients scan';
 
+  // Determine text color for readability on card background
+  const cardTextColor = cardColor?.text || colors.text;
+  const cardSubtextColor = cardColor?.text 
+    ? `${cardColor.text}99` 
+    : colors.muted;
+
   return (
     <View style={styles.container}>
       <Swipeable
@@ -67,23 +73,32 @@ export default function HistoryItemCard({
                 <Ionicons 
                   name={item.type === 'barcode' ? 'barcode-outline' : 'document-text-outline'} 
                   size={24} 
-                  color={colors.muted} 
+                  color={cardSubtextColor} 
                 />
               </View>
             )}
             <View style={styles.content}>
-              <Text style={styles.productName} numberOfLines={1}>
+              <Text style={[styles.productName, { color: cardTextColor }]} numberOfLines={1}>
                 {displayName}
               </Text>
-              <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
+              <Text style={[styles.dateText, { color: cardSubtextColor }]}>{formatDate(item.createdAt)}</Text>
+              {item.healthLabel && (
+                <View style={styles.badgeRow}>
+                  <View style={[styles.badge, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
+                    <Text style={[styles.badgeText, { color: cardTextColor }]}>
+                      {item.healthLabel}
+                    </Text>
+                  </View>
+                </View>
+              )}
               {item.colorCodes && item.colorCodes.length > 0 ? (
-                <Text numberOfLines={1} style={styles.subtitle}>
+                <Text numberOfLines={1} style={[styles.subtitle, { color: cardSubtextColor }]}>
                   {item.colorCodes.join(', ')}
                 </Text>
               ) : null}
             </View>
             <View style={styles.indicator}>
-              <Ionicons name="chevron-forward" size={30} color="rgba(0,0,0,0.4)" />
+              <Ionicons name="chevron-forward" size={30} color={`${cardTextColor}66`} />
             </View>
           </View>
         </Pressable>
@@ -127,16 +142,28 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#000000',
   },
   dateText: {
     fontSize: 13,
-    color: 'rgba(0,0,0,0.6)',
     marginTop: 4,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    marginTop: 4,
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   subtitle: {
     fontSize: 14,
-    color: 'rgba(0,0,0,0.5)',
     marginTop: 4,
   },
   indicator: {

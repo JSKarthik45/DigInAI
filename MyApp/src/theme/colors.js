@@ -24,6 +24,14 @@ export const lightColors = {
   danger: '#ef4444',
   info: '#3b82f6',
   
+  // Health rating scale (green → red)
+  ratingExcellent: '#16a34a',   // Deep green  — score 90-100
+  ratingGood: '#65a30d',        // Lime green  — score 75-89
+  ratingModerate: '#ca8a04',    // Golden      — score 60-74
+  ratingCaution: '#ea580c',     // Orange      — score 40-59
+  ratingPoor: '#dc2626',        // Red         — score 20-39
+  ratingDangerous: '#991b1b',   // Dark red    — score 0-19
+  
   // Border colors
   border: '#e5e7eb',
   borderLight: '#f3f4f6',
@@ -58,6 +66,14 @@ export const darkColors = {
   errorLight: '#fca5a5',
   danger: '#f87171',
   info: '#60a5fa',
+  
+  // Health rating scale (green → red)
+  ratingExcellent: '#22c55e',   // Bright green — score 90-100
+  ratingGood: '#84cc16',        // Lime         — score 75-89
+  ratingModerate: '#eab308',    // Yellow       — score 60-74
+  ratingCaution: '#f97316',     // Orange       — score 40-59
+  ratingPoor: '#ef4444',        // Red          — score 20-39
+  ratingDangerous: '#b91c1c',   // Deep red     — score 0-19
   
   // Border colors
   border: '#374151',

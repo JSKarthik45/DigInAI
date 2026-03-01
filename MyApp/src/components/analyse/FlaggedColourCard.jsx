@@ -23,8 +23,20 @@ export default function FlaggedColourCard({
     ? `${code} ${properName} (${commonName})`
     : `${code} ${properName || commonName || ''}`.trim();
 
+  // Color the left border based on severity
+  const severityColor = hasBanned ? '#dc2626' : hasWarning ? '#f59e0b' : colors.border;
+
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, borderColor: colors.border }, style]}>
+    <View style={[
+      styles.container, 
+      { 
+        backgroundColor: colors.background, 
+        borderColor: colors.border,
+        borderLeftColor: severityColor,
+        borderLeftWidth: 3,
+      }, 
+      style
+    ]}>
       <View style={styles.header}>
         {hasBanned && (
           <Ionicons name="alert-circle" size={18} color="#ff3b30" />

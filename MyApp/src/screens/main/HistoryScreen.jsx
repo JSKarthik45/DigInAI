@@ -25,35 +25,40 @@ const createStyles = (colors) =>
 // Helper to determine card color based on rating
 const getCardColors = (item, colors) => {
   if (item.cardColor) {
-    return { bg: item.cardColor, text: '#000000' };
+    return { bg: item.cardColor, text: '#ffffff' };
   }
 
-  const raw = item.rating || item.healthRating || item.risk || item.score || item.level;
+  const raw = item.rating || item.healthRating || item.healthLabel || item.risk || item.score || item.level;
   const key = typeof raw === 'string' ? raw.toLowerCase() : null;
 
+  // Consistent green → red palette matching the health rating scale
   const palette = {
-    excellent: { bg: '#0f9d58', text: '#ffffff' },
-    good: { bg: '#86efac', text: '#111827' },
-    moderate: { bg: '#facc15', text: '#111827' },
-    medium: { bg: '#fb7185', text: '#111827' },
-    high: { bg: '#7f1d1d', text: '#ffffff' },
-    default: { bg: colors.surface, text: colors.text },
+    excellent:  { bg: colors.ratingExcellent, text: '#ffffff' },
+    good:       { bg: colors.ratingGood,      text: '#ffffff' },
+    moderate:   { bg: colors.ratingModerate,   text: '#ffffff' },
+    caution:    { bg: colors.ratingCaution,    text: '#ffffff' },
+    poor:       { bg: colors.ratingPoor,       text: '#ffffff' },
+    dangerous:  { bg: colors.ratingDangerous,  text: '#ffffff' },
+    default:    { bg: colors.surface,          text: colors.text },
   };
 
   if (key) {
-    if (key.includes('excellent') || key.includes('low')) return palette.excellent;
+    if (key.includes('excellent') || key.includes('low'))  return palette.excellent;
     if (key.includes('good') || key.includes('acceptable')) return palette.good;
-    if (key.includes('moderate') || key.includes('warning')) return palette.moderate;
-    if (key.includes('medium') || key.includes('some')) return palette.medium;
-    if (key.includes('high') || key.includes('danger') || key.includes('unhealthy')) return palette.high;
+    if (key.includes('moderate'))                           return palette.moderate;
+    if (key.includes('caution') || key.includes('warning')) return palette.caution;
+    if (key.includes('poor') || key.includes('medium'))     return palette.poor;
+    if (key.includes('danger') || key.includes('high') || key.includes('unhealthy')) return palette.dangerous;
   }
 
+  // Numeric score: higher score = better
   if (typeof raw === 'number') {
-    if (raw >= 0 && raw <= 20) return palette.excellent;
-    if (raw > 20 && raw <= 40) return palette.good;
-    if (raw > 40 && raw <= 60) return palette.moderate;
-    if (raw > 60 && raw <= 80) return palette.medium;
-    if (raw > 80) return palette.high;
+    if (raw >= 90) return palette.excellent;
+    if (raw >= 75) return palette.good;
+    if (raw >= 60) return palette.moderate;
+    if (raw >= 40) return palette.caution;
+    if (raw >= 20) return palette.poor;
+    return palette.dangerous;
   }
 
   return palette.default;

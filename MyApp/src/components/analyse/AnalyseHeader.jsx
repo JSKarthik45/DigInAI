@@ -10,15 +10,24 @@ export default function AnalyseHeader({
   productName,
   scanTime,
   ratingColor,
+  score,
   onClose,
   style,
 }) {
   const colors = useThemeColors();
 
+  // Choose icon based on score range
+  const getStatusIcon = () => {
+    if (score == null) return 'checkmark';
+    if (score >= 75) return 'checkmark-circle';
+    if (score >= 40) return 'alert-circle';
+    return 'close-circle';
+  };
+
   return (
     <View style={[styles.container, style]}>
       <View style={[styles.statusPill, { backgroundColor: ratingColor }]}>
-        <Ionicons name="checkmark" size={30} color={colors.background} />
+        <Ionicons name={getStatusIcon()} size={30} color="#ffffff" />
       </View>
 
       <View style={styles.textBlock}>
