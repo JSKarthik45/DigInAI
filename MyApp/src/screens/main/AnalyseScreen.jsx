@@ -470,6 +470,14 @@ export default function AnalyseScreen() {
     ? colorCodes.join(', ')
     : 'No colour additives detected.';
 
+  const coloursSectionTitle = colorCodes.length
+    ? 'Colours found in this product'
+    : 'No colours found in this product';
+
+  const flaggedSectionTitle = colorCodes.length
+    ? 'Colours Banned Or Warned'
+    : 'No banned or warned colours found';
+
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       <AnalyseHeader
@@ -492,19 +500,19 @@ export default function AnalyseScreen() {
         />
 
         <View style={styles.section}>
-          <SectionHeader title="Colours found in this product" />
-          <View style={styles.bulletRow}>
-            <View style={styles.bulletDot} />
-            <Text style={styles.bulletText}>{coloursSummaryText}</Text>
-          </View>
+          <SectionHeader title={coloursSectionTitle} />
+          {colorCodes.length > 0 ? (
+            <View style={styles.bulletRow}>
+              <View style={styles.bulletDot} />
+              <Text style={styles.bulletText}>{coloursSummaryText}</Text>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.section}>
-          <SectionHeader title="Colours Banned Or Warned" />
+          <SectionHeader title={flaggedSectionTitle} />
           {colorCodes.length === 0 ? (
-            <Text style={styles.noDataText}>
-              No colour additives detected in this product.
-            </Text>
+            null
           ) : flaggedColours.length === 0 ? (
             <Text style={styles.noDataText}>
               No high-risk colour additives flagged based on current data.
@@ -520,6 +528,7 @@ export default function AnalyseScreen() {
           <Button 
             title="SHARE ANALYSIS" 
             variant="primary" 
+            size="small"
             onPress={() => {}}
             style={{ flex: 1 }}
             textStyle={{ textAlign: 'center' }}
@@ -527,6 +536,7 @@ export default function AnalyseScreen() {
           <Button 
             title="BACK" 
             variant="secondary" 
+            size="small"
             onPress={handleClose}
             style={{ flex: 1 }}
           />
