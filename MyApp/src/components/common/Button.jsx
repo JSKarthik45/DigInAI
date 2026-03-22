@@ -20,7 +20,7 @@ export default function Button({
 
   const sizeStyles = {
     small: { paddingVertical: 6, paddingHorizontal: 12 },
-    medium: { paddingVertical: 10, paddingHorizontal: 20 },
+    medium: { paddingVertical: 5, paddingHorizontal: 16 },
     large: { paddingVertical: 14, paddingHorizontal: 28 },
   };
 

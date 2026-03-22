@@ -534,18 +534,18 @@ export default function AnalyseScreen() {
           <Button 
             title="SHARE ANALYSIS" 
             variant="primary" 
-            size="large"
+            size="medium"
             onPress={() => {}}
             style={{ flex: 1 }}
-            textStyle={{ textAlign: 'center', fontSize: 16 }}
+            textStyle={{ textAlign: 'center', fontSize: 15 }}
           />
           <Button 
             title="BACK" 
             variant="secondary" 
-            size="large"
+            size="medium"
             onPress={handleClose}
             style={{ flex: 1 }}
-            textStyle={{ fontSize: 16 }}
+            textStyle={{ fontSize: 15 }}
           />
         </View>
       </ScrollView>

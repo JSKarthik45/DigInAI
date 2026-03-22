@@ -32,7 +32,7 @@ export default function AppNavigator() {
         borderTopWidth: 0,
         paddingTop: 2,
         paddingBottom: 10,
-        height: 64,
+        height: 45,
       },
       tabBarItemStyle: {
         paddingTop: 0,
