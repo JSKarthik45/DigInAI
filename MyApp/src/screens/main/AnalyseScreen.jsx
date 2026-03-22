@@ -45,6 +45,10 @@ const createStyles = (colors) =>
       marginBottom: 16,
       paddingHorizontal: 4,
     },
+    sectionCompact: {
+      marginBottom: 8,
+      paddingHorizontal: 4,
+    },
     bulletRow: {
       flexDirection: 'row',
       alignItems: 'flex-start',
@@ -499,14 +503,16 @@ export default function AnalyseScreen() {
           backgroundColor={ratingColor}
         />
 
-        <View style={styles.section}>
-          <SectionHeader title={coloursSectionTitle} />
-          {colorCodes.length > 0 ? (
-            <View style={styles.bulletRow}>
-              <View style={styles.bulletDot} />
-              <Text style={styles.bulletText}>{coloursSummaryText}</Text>
-            </View>
-          ) : null}
+        <View>
+          <View style={colorCodes.length === 0 ? [styles.section, styles.sectionCompact] : styles.section}>
+            <SectionHeader title={coloursSectionTitle} />
+            {colorCodes.length > 0 ? (
+              <View style={styles.bulletRow}>
+                <View style={styles.bulletDot} />
+                <Text style={styles.bulletText}>{coloursSummaryText}</Text>
+              </View>
+            ) : null}
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -528,17 +534,18 @@ export default function AnalyseScreen() {
           <Button 
             title="SHARE ANALYSIS" 
             variant="primary" 
-            size="small"
+            size="large"
             onPress={() => {}}
             style={{ flex: 1 }}
-            textStyle={{ textAlign: 'center' }}
+            textStyle={{ textAlign: 'center', fontSize: 16 }}
           />
           <Button 
             title="BACK" 
             variant="secondary" 
-            size="small"
+            size="large"
             onPress={handleClose}
             style={{ flex: 1 }}
+            textStyle={{ fontSize: 16 }}
           />
         </View>
       </ScrollView>

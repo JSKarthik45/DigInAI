@@ -30,16 +30,18 @@ export default function AppNavigator() {
       tabBarStyle: { 
         backgroundColor: colors.background, 
         borderTopWidth: 0,
-        paddingTop: 4,
+        paddingTop: 2,
+        paddingBottom: 10,
+        height: 64,
       },
       tabBarItemStyle: {
-        paddingTop: 2,
+        paddingTop: 0,
       },
       tabBarIconStyle: {
-        marginTop: -2,
+        marginTop: -6,
       },
       tabBarLabelStyle: {
-        marginTop: -1,
+        marginTop: -4,
       },
       headerStyle: { 
         backgroundColor: colors.background, 
